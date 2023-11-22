@@ -1,0 +1,17 @@
+{
+  "name": "pii-discovery-report",
+  "version": "0.0.0",
+  "description": "Profile datasets for likely personal data fields and evidence locations.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/edilec/pii-discovery-report"
+  }
+}
