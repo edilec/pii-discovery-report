@@ -1,0 +1,331 @@
+{
+  "schemaVersion": "1",
+  "dataset": "crm-orders-export-sample",
+  "source": "tabular-export",
+  "records": [
+    {
+      "order_ref": "ORD-2026-000813",
+      "created_at": "2026-02-01T09:15:00Z",
+      "full_name": "Avery Stone",
+      "contact": {
+        "email": "avery.stone@example.test",
+        "phone": "+44 20 7946 0958"
+      },
+      "date_of_birth": "1984-03-11",
+      "government_id": "987-65-4320",
+      "payment": {
+        "card_number": "4111 1111 1111 1111"
+      },
+      "last_seen_ip": "203.0.113.42",
+      "legacy_ref": "412-90-7731",
+      "product_name": "Hex Bolt M8",
+      "sku": "4901234512345",
+      "unit_price": 4.5,
+      "quantity": 40,
+      "in_stock": false,
+      "warehouse_code": "LDN-03",
+      "supplier": {
+        "company_name": "Northwind Fixings Ltd"
+      },
+      "notes": "Call before delivery",
+      "version": "2.10.0"
+    },
+    {
+      "order_ref": "ORD-2026-000830",
+      "created_at": "2026-02-02T09:15:00Z",
+      "full_name": "Jide Okafor",
+      "contact": {
+        "email": "j.okafor@example.test",
+        "phone": "+1 (415) 555-0143"
+      },
+      "date_of_birth": "1991-07-02",
+      "government_id": "998-01-7734",
+      "payment": {
+        "card_number": "5555 5555 5555 4444"
+      },
+      "last_seen_ip": "198.51.100.7",
+      "legacy_ref": "508-21-4460",
+      "product_name": "Cable Gland 20mm",
+      "sku": "5012345123456",
+      "unit_price": 5.75,
+      "quantity": 45,
+      "in_stock": true,
+      "warehouse_code": "MAN-01",
+      "supplier": {
+        "company_name": "Baytree Components Ltd"
+      },
+      "notes": "Leave at reception",
+      "version": "2.11.0"
+    },
+    {
+      "order_ref": "ORD-2026-000847",
+      "created_at": "2026-02-03T09:15:00Z",
+      "full_name": "Mira Lindqvist",
+      "contact": {
+        "email": "m.lindqvist@example.test",
+        "phone": "(415) 555-0181"
+      },
+      "date_of_birth": "1978-12-24",
+      "government_id": "955-42-0018",
+      "payment": {
+        "card_number": "4111-1111-1111-1111"
+      },
+      "last_seen_ip": "203.0.113.19",
+      "legacy_ref": "377-64-9902",
+      "product_name": "Junction Box 4W",
+      "sku": "6023456234567",
+      "unit_price": 7.0,
+      "quantity": 50,
+      "in_stock": true,
+      "warehouse_code": "BRS-02",
+      "supplier": {
+        "company_name": "Harrow Cable Co"
+      },
+      "notes": "Fragile, do not stack",
+      "version": "2.12.0"
+    },
+    {
+      "order_ref": "ORD-2026-000864",
+      "created_at": "2026-02-04T09:15:00Z",
+      "full_name": "Tomas Reyes",
+      "contact": {
+        "email": "t.reyes@example.test",
+        "phone": "+44 20 7946 1101"
+      },
+      "date_of_birth": "2001-01-30",
+      "government_id": "971-33-8890",
+      "payment": {
+        "card_number": "5105 1051 0510 5100"
+      },
+      "last_seen_ip": "198.51.100.203",
+      "legacy_ref": "291-08-5513",
+      "product_name": "Din Rail 35mm",
+      "sku": "7034567345678",
+      "unit_price": 8.25,
+      "quantity": 55,
+      "in_stock": false,
+      "warehouse_code": "LDN-01",
+      "supplier": {
+        "company_name": "Northwind Fixings Ltd"
+      },
+      "notes": "Book a loading bay",
+      "version": "2.13.0"
+    },
+    {
+      "order_ref": "ORD-2026-000881",
+      "created_at": "2026-02-05T09:15:00Z",
+      "full_name": "Noor Haddad",
+      "contact": {
+        "email": "n.haddad@example.test",
+        "phone": "+1 (415) 555-0172"
+      },
+      "date_of_birth": "1966-09-08",
+      "government_id": "902-77-1245",
+      "payment": {
+        "card_number": "4111 1111 1111 1111"
+      },
+      "last_seen_ip": "203.0.113.88",
+      "legacy_ref": "640-77-1284",
+      "product_name": "Ferrule Kit 12",
+      "sku": "8045678456789",
+      "unit_price": 9.5,
+      "quantity": 60,
+      "in_stock": true,
+      "warehouse_code": "GLW-04",
+      "supplier": {
+        "company_name": "Ridgeway Supply Ltd"
+      },
+      "notes": "Deliver before noon",
+      "version": "2.14.0"
+    },
+    {
+      "order_ref": "ORD-2026-000898",
+      "created_at": "2026-02-06T09:15:00Z",
+      "full_name": "Petra Novak",
+      "contact": {
+        "email": "p.novak@example.test",
+        "phone": "+44 20 7946 0322"
+      },
+      "date_of_birth": "1995-05-17",
+      "government_id": "989-14-6603",
+      "payment": {
+        "card_number": "5555 5555 5555 4444"
+      },
+      "last_seen_ip": "198.51.100.31",
+      "legacy_ref": "153-92-3376",
+      "product_name": "Wago Clip 221",
+      "sku": "9056789567890",
+      "unit_price": 10.75,
+      "quantity": 65,
+      "in_stock": true,
+      "warehouse_code": "MAN-02",
+      "supplier": {
+        "company_name": "Baytree Components Ltd"
+      },
+      "notes": "Signature required",
+      "version": "2.15.0"
+    },
+    {
+      "order_ref": "ORD-2026-000915",
+      "created_at": "2026-02-07T09:15:00Z",
+      "full_name": "Kenji Aoki",
+      "contact": {
+        "email": "k.aoki@example.test",
+        "phone": "(415) 555-0199"
+      },
+      "date_of_birth": "1988-11-03",
+      "government_id": "966-28-3371",
+      "payment": {
+        "card_number": "4012 8888 8888 1881"
+      },
+      "last_seen_ip": "203.0.113.5",
+      "legacy_ref": "486-30-8827",
+      "product_name": "Trunking 50x50",
+      "sku": "1067890678901",
+      "unit_price": 12.0,
+      "quantity": 70,
+      "in_stock": false,
+      "warehouse_code": "LDN-03",
+      "supplier": {
+        "company_name": "Harrow Cable Co"
+      },
+      "notes": "Pallet return needed",
+      "version": "2.16.0"
+    },
+    {
+      "order_ref": "ORD-2026-000932",
+      "created_at": "2026-02-08T09:15:00Z",
+      "full_name": "Rosa Delgado",
+      "contact": {
+        "email": "r.delgado@example.test",
+        "phone": "+1 (415) 555-0104"
+      },
+      "date_of_birth": "1973-04-26",
+      "government_id": "944-05-9917",
+      "payment": {
+        "card_number": "5105 1051 0510 5100"
+      },
+      "last_seen_ip": "198.51.100.164",
+      "legacy_ref": "725-15-6091",
+      "product_name": "Conduit Bend 25",
+      "sku": "2078901789012",
+      "unit_price": 13.25,
+      "quantity": 75,
+      "in_stock": true,
+      "warehouse_code": "BRS-01",
+      "supplier": {
+        "company_name": "Ridgeway Supply Ltd"
+      },
+      "notes": "Site access via gate B",
+      "version": "2.17.0"
+    },
+    {
+      "order_ref": "ORD-2026-000949",
+      "created_at": "2026-02-09T09:15:00Z",
+      "full_name": "Ivan Petrov",
+      "contact": {
+        "email": "i.petrov@example.test",
+        "phone": "+44 20 7946 0777"
+      },
+      "date_of_birth": "1999-08-14",
+      "government_id": "977-60-2248",
+      "payment": {
+        "card_number": "4111 1111 1111 1111"
+      },
+      "last_seen_ip": "203.0.113.201",
+      "legacy_ref": "394-58-2213",
+      "product_name": "Earth Bar 12W",
+      "sku": "3089012890123",
+      "unit_price": 14.5,
+      "quantity": 80,
+      "in_stock": true,
+      "warehouse_code": "GLW-02",
+      "supplier": {
+        "company_name": "Northwind Fixings Ltd"
+      },
+      "notes": "Confirm cut lengths",
+      "version": "2.18.0"
+    },
+    {
+      "order_ref": "ORD-2026-000966",
+      "created_at": "2026-02-10T09:15:00Z",
+      "full_name": "Leila Farouk",
+      "contact": {
+        "email": "l.farouk@example.test",
+        "phone": "(415) 555-0156"
+      },
+      "date_of_birth": "1982-02-09",
+      "government_id": "931-18-7705",
+      "payment": {
+        "card_number": "5555 5555 5555 4444"
+      },
+      "last_seen_ip": "198.51.100.99",
+      "legacy_ref": "861-04-7735",
+      "product_name": "Gland Nut M20",
+      "sku": "4090123901234",
+      "unit_price": 15.75,
+      "quantity": 85,
+      "in_stock": false,
+      "warehouse_code": "MAN-01",
+      "supplier": {
+        "company_name": "Baytree Components Ltd"
+      },
+      "notes": "Hold for collection",
+      "version": "2.19.0"
+    },
+    {
+      "order_ref": "ORD-2026-000983",
+      "created_at": "2026-02-11T09:15:00Z",
+      "full_name": "Otto Brandt",
+      "contact": {
+        "email": "o.brandt@example.test",
+        "phone": "+1 (415) 555-0128"
+      },
+      "date_of_birth": "1969-06-21",
+      "government_id": "992-49-3382",
+      "payment": {
+        "card_number": "4012 8888 8888 1881"
+      },
+      "last_seen_ip": "203.0.113.117",
+      "legacy_ref": "247-69-1508",
+      "product_name": "Cable Tie 200mm",
+      "sku": "5001234012346",
+      "unit_price": 17.0,
+      "quantity": 90,
+      "in_stock": true,
+      "warehouse_code": "LDN-02",
+      "supplier": {
+        "company_name": "Harrow Cable Co"
+      },
+      "notes": "Split across two drops",
+      "version": "2.20.0"
+    },
+    {
+      "order_ref": "ORD-2026-001000",
+      "created_at": "2026-02-12T09:15:00Z",
+      "full_name": "Sanne de Vries",
+      "contact": {
+        "email": "s.devries@example.test",
+        "phone": "+44 20 7946 0455"
+      },
+      "date_of_birth": "1993-10-05",
+      "government_id": "908-36-5514",
+      "payment": {
+        "card_number": "4111-1111-1111-1111"
+      },
+      "last_seen_ip": "198.51.100.12",
+      "legacy_ref": "569-83-4462",
+      "product_name": "Back Box 35mm",
+      "sku": "6012345123456",
+      "unit_price": 18.25,
+      "quantity": 95,
+      "in_stock": true,
+      "warehouse_code": "BRS-03",
+      "supplier": {
+        "company_name": "Ridgeway Supply Ltd"
+      },
+      "notes": "Check gauge on arrival",
+      "version": "2.21.0"
+    }
+  ]
+}
