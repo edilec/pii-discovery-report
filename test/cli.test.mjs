@@ -1,0 +1,150 @@
+/**
+ * The command-line surface, including the two shapes of exit 2.
+ *
+ * A configuration error means the run never had a subject, so stdout stays
+ * EMPTY and the message goes to stderr. Unreadable evidence means the run had a
+ * subject and failed to obtain evidence about it, so stdout carries an
+ * `incomplete` report naming what was not examined. A consumer that pipes
+ * stdout has to handle both, which is why both are pinned.
+ */
+
+import assert from 'node:assert/strict'
+import { join } from 'node:path'
+import test from 'node:test'
+
+import { EXAMPLES, runCli, withTempDir, writeJson, writeText } from './helpers.mjs'
+
+const CLEAN = join(EXAMPLES, 'clean', 'dataset.json')
+const SEEDED = join(EXAMPLES, 'seeded', 'dataset.json')
+const SEEDED_CONFIG = join(EXAMPLES, 'seeded', 'config.json')
+const INCOMPLETE = join(EXAMPLES, 'incomplete', 'dataset.json')
+const INCOMPLETE_CONFIG = join(EXAMPLES, 'incomplete', 'config.json')
+
+test('--help prints the help on stderr, leaves stdout empty and exits 0', async () => {
+  for (const flag of ['--help', '-h']) {
+    const result = await runCli([flag])
+    assert.equal(result.code, 0, flag)
+    assert.equal(result.stdout, '', flag)
+    assert.ok(result.stderr.includes('Usage:'), flag)
+    assert.ok(result.stderr.includes('Exit codes:'), flag)
+  }
+})
+
+test('the help states the three exit codes and the two shapes of exit 2', async () => {
+  const { stderr } = await runCli(['--help'])
+  assert.ok(stderr.includes('stdout stays EMPTY'))
+  assert.ok(stderr.includes('incomplete'))
+  assert.ok(stderr.includes('writes no file'))
+})
+
+test('an unknown option is a configuration error: empty stdout, message on stderr, exit 2', async () => {
+  const result = await runCli(['--dataset', CLEAN, '--wat'])
+  assert.equal(result.code, 2)
+  assert.equal(result.stdout, '')
+  assert.ok(result.stderr.includes('Unknown option "--wat"'))
+})
+
+test('an option value carrying a control character cannot forge a line in the diagnostic', async () => {
+  const forged = `--x${String.fromCharCode(0x0a)}Unknown option "--y"`
+  const result = await runCli(['--dataset', CLEAN, forged])
+  assert.equal(result.code, 2)
+  assert.equal(result.stdout, '')
+  assert.ok(result.stderr.includes('Unknown option "--x Unknown option "--y""'))
+})
+
+test('a missing --dataset is a configuration error', async () => {
+  const result = await runCli([])
+  assert.equal(result.code, 2)
+  assert.equal(result.stdout, '')
+  assert.ok(result.stderr.includes('--dataset is required'))
+})
+
+test('an option that needs a value and has none is refused', async () => {
+  const result = await runCli(['--dataset'])
+  assert.equal(result.code, 2)
+  assert.equal(result.stdout, '')
+  assert.ok(result.stderr.includes('--dataset requires a value'))
+})
+
+test('a configuration file that does not exist is a configuration error, not a report', async () => {
+  const result = await runCli(['--dataset', CLEAN, '--config', join(EXAMPLES, 'no-such-config.json')])
+  assert.equal(result.code, 2)
+  assert.equal(result.stdout, '')
+  assert.ok(result.stderr.includes('The configuration was not read'))
+})
+
+test('an unknown configuration key is refused rather than ignored', async () => {
+  await withTempDir(async (directory) => {
+    const config = await writeJson(directory, 'config.json', { schemaVersion: '1', minConfidance: 'low' })
+    const result = await runCli(['--dataset', CLEAN, '--config', config])
+    assert.equal(result.code, 2)
+    assert.equal(result.stdout, '')
+    // A one-character typo must not turn a real failure into a green run.
+    assert.ok(result.stderr.includes('Unknown configuration key "minConfidance"'))
+  })
+})
+
+test('a configuration that is not valid JSON is refused without being reproduced', async () => {
+  await withTempDir(async (directory) => {
+    const config = await writeText(directory, 'config.json', 'apikey=not-a-real-key-9f3a')
+    const result = await runCli(['--dataset', CLEAN, '--config', config])
+    assert.equal(result.code, 2)
+    assert.equal(result.stdout, '')
+    assert.equal(result.stderr.includes('not-a-real-key-9f3a'), false)
+    assert.ok(result.stderr.includes("unexpected token 'a' at the start of the document"))
+  })
+})
+
+test('--min-confidence is validated the same way the document is', async () => {
+  const result = await runCli(['--dataset', CLEAN, '--min-confidence', 'certain'])
+  assert.equal(result.code, 2)
+  assert.equal(result.stdout, '')
+  assert.ok(result.stderr.includes('must be one of low, medium, high'))
+})
+
+test('an unreadable dataset is the OTHER shape of exit 2: a report on stdout', async () => {
+  const result = await runCli(['--dataset', join(EXAMPLES, 'no-such-dataset.json'), '--json'])
+  assert.equal(result.code, 2)
+  const report = JSON.parse(result.stdout)
+  assert.equal(report.status, 'incomplete')
+  assert.deepEqual(report.findings.map((finding) => finding.ruleId), ['dataset-unreadable'])
+  assert.equal(report.findings[0].location.file, 'no-such-dataset.json')
+})
+
+test('the human summary goes to stderr by default and is suppressed by --json', async () => {
+  const noisy = await runCli(['--dataset', CLEAN])
+  assert.equal(noisy.code, 0)
+  assert.ok(noisy.stderr.includes('Status pass.'))
+  assert.ok(noisy.stderr.includes('field(s) over'))
+  JSON.parse(noisy.stdout)
+
+  const quiet = await runCli(['--dataset', CLEAN, '--json'])
+  assert.equal(quiet.stderr, '')
+  assert.equal(quiet.stdout, noisy.stdout)
+})
+
+test('the shipped examples run, and each ends where its name says it does', async () => {
+  const clean = await runCli(['--dataset', CLEAN, '--json'])
+  assert.equal(clean.code, 0)
+  assert.equal(JSON.parse(clean.stdout).status, 'pass')
+
+  const seeded = await runCli(['--dataset', SEEDED, '--config', SEEDED_CONFIG, '--json'])
+  assert.equal(seeded.code, 1)
+  assert.equal(JSON.parse(seeded.stdout).status, 'fail')
+
+  const partial = await runCli(['--dataset', INCOMPLETE, '--config', INCOMPLETE_CONFIG, '--json'])
+  assert.equal(partial.code, 2)
+  const report = JSON.parse(partial.stdout)
+  assert.equal(report.status, 'incomplete')
+  assert.deepEqual(
+    report.fields.map((entry) => entry.classification),
+    ['undetermined', 'undetermined', 'undetermined'],
+  )
+})
+
+test('a dataset path is never echoed back as an absolute host path', async () => {
+  const result = await runCli(['--dataset', CLEAN, '--json'])
+  const report = JSON.parse(result.stdout)
+  assert.equal(report.dataset.file, 'dataset.json')
+  assert.equal(result.stdout.includes(EXAMPLES), false)
+})

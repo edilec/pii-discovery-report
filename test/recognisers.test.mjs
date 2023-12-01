@@ -1,0 +1,179 @@
+/**
+ * The good case first.
+ *
+ * The first verification of a checker is not "does it catch the bad case". It
+ * is "does it stay silent on the good one": a miss leaves the reader where they
+ * were, a false positive at error severity sends somebody to redact a product
+ * code, and after that nobody reads the output. Every recogniser below is
+ * tested against the near-misses that would make it noisy before it is tested
+ * against the value it exists to find.
+ */
+
+import assert from 'node:assert/strict'
+import test from 'node:test'
+
+import { RECOGNISERS, normaliseValue, recogniserById } from '../src/index.mjs'
+import { fieldNamed, reportFor } from './helpers.mjs'
+
+function matches(id, value) {
+  const recogniser = recogniserById(id)
+  return recogniser.matchesValue !== null && recogniser.matchesValue(normaliseValue(value))
+}
+
+test('an ordinary business export draws no candidate at all', () => {
+  const report = reportFor([
+    {
+      order_ref: 'ORD-2026-000813',
+      product_name: 'Hex Bolt M8',
+      sku: '4901234512345',
+      unit_price: 12.5,
+      quantity: 40,
+      warehouse_code: 'LDN-03',
+      created_at: '2026-02-14T09:15:00Z',
+      version: '2.14.0',
+      in_stock: true,
+      supplier: { company_name: 'Northwind Fixings Ltd' },
+      notes: 'Call before delivery on 0800 numbers',
+    },
+  ])
+  assert.deepEqual(report.findings, [])
+  assert.equal(report.status, 'pass')
+  assert.equal(report.summary.clean, 11)
+  assert.equal(report.summary.personalData, 0)
+  assert.equal(report.summary.uncertain, 0)
+})
+
+test('email-address: the near-misses first', () => {
+  for (const value of ['a@b', 'ada example.test', '@example.test', 'ada@', 'ada@example', 'ada @example.test']) {
+    assert.equal(matches('email-address', value), false, value)
+  }
+  assert.equal(matches('email-address', 'ada@example.test'), true)
+  assert.equal(matches('email-address', 'ada.lovelace+notes@mail.example.test'), true)
+})
+
+test('a recogniser matches a whole value, never a fragment of prose', () => {
+  // Documented as a limit rather than hidden: scanning prose for embedded
+  // identifiers is how a checker starts reporting defects on correct input.
+  assert.equal(matches('email-address', 'write to ada@example.test about it'), false)
+  const report = reportFor([{ notes: 'write to ada@example.test about it' }])
+  assert.equal(fieldNamed(report, 'notes').classification, 'clean')
+})
+
+test('phone-number: a bare run of digits is not a telephone number', () => {
+  // An order number as often as a telephone number, and this tool does not
+  // guess between them. The cost is recall on unformatted columns, and it is in
+  // the README under limits.
+  for (const value of ['4155550143', '12345', '2026', '415 5550143']) {
+    assert.equal(matches('phone-number', value), false, value)
+  }
+  for (const value of ['+44 20 7946 0958', '+1 (415) 555-0143', '(415) 555-0181', '415.555.0181']) {
+    assert.equal(matches('phone-number', value), true, value)
+  }
+  // Too few and too many digits, on both sides of the international bound.
+  assert.equal(matches('phone-number', '+1 234 567'), false)
+  assert.equal(matches('phone-number', '+1 234 5678'), true)
+  assert.equal(matches('phone-number', '+123 456 789 012 345'), true)
+  assert.equal(matches('phone-number', '+123 456 789 012 3456'), false)
+})
+
+test('payment-card: the check digit is what keeps it off ordinary numbers', () => {
+  assert.equal(matches('payment-card', '4111 1111 1111 1111'), true)
+  assert.equal(matches('payment-card', '4111-1111-1111-1111'), true)
+  // One digit changed: the shape is identical and the checksum is not.
+  assert.equal(matches('payment-card', '4111 1111 1111 1112'), false)
+  assert.equal(matches('payment-card', '4901234512345'), false)
+  assert.equal(matches('payment-card', '123456789012'), false)
+})
+
+test('government-id: only the grouped shape, and it collides with internal references by design', () => {
+  assert.equal(matches('government-id', '987-65-4320'), true)
+  assert.equal(matches('government-id', '987654320'), false)
+  assert.equal(matches('government-id', '1984-03-11'), false)
+  // The known false-positive class, stated rather than wished away: an internal
+  // reference in the same shape is indistinguishable from an identifier.
+  assert.equal(matches('government-id', '412-90-7731'), true)
+})
+
+test('network-address: an octet out of range or padded is not an address', () => {
+  assert.equal(matches('network-address', '203.0.113.42'), true)
+  assert.equal(matches('network-address', '198.51.100.7'), true)
+  assert.equal(matches('network-address', '255.255.255.255'), true)
+  assert.equal(matches('network-address', '256.0.113.42'), false)
+  assert.equal(matches('network-address', '203.0.113'), false)
+  assert.equal(matches('network-address', '203.00.113.42'), false)
+  assert.equal(matches('network-address', '2.14.0'), false)
+  assert.equal(matches('network-address', '2001:db8::7334'), true)
+  assert.equal(matches('network-address', '2001:db8:::7334'), false)
+  assert.equal(matches('network-address', '2001:db8:0:0:0:0:0:1'), true)
+  assert.equal(matches('network-address', '2001:db8:0:0:0:0:0:0:1'), false)
+  assert.equal(matches('network-address', '::1'), true)
+  assert.equal(matches('network-address', ':'), false)
+  // The compression marker stands for at least one omitted group, so seven
+  // groups beside it is legal and eight is not.
+  assert.equal(matches('network-address', '1:2:3:4:5:6:7::'), true)
+  assert.equal(matches('network-address', '1:2:3:4:5:6:7:8::'), false)
+})
+
+test('date-of-birth: a date is only a birth date when the column says so', () => {
+  const inBirthColumn = reportFor([
+    { date_of_birth: '1984-03-11' }, { date_of_birth: '1991-07-02' },
+    { date_of_birth: '1978-12-24' }, { date_of_birth: '2001-01-30' },
+  ])
+  assert.equal(fieldNamed(inBirthColumn, 'date_of_birth').classification, 'personal-data')
+  assert.equal(fieldNamed(inBirthColumn, 'date_of_birth').confidence, 'medium')
+
+  const elsewhere = reportFor([
+    { shipped_on: '1984-03-11' }, { shipped_on: '1991-07-02' },
+    { shipped_on: '1978-12-24' }, { shipped_on: '2001-01-30' },
+  ])
+  assert.equal(fieldNamed(elsewhere, 'shipped_on').classification, 'clean')
+  assert.deepEqual(elsewhere.findings, [])
+
+  // Named for birth, holding something that is not a date: no candidate, so no
+  // finding. The column name alone is not evidence about a value.
+  const namedOnly = reportFor([{ birth_date: 'unknown' }, { birth_date: 'n/a' }])
+  assert.equal(fieldNamed(namedOnly, 'birth_date').classification, 'clean')
+})
+
+test('person-name: found by the column name, and it says no value was classified', () => {
+  const report = reportFor([{ full_name: 'Avery Stone' }, { full_name: 'Jide Okafor' }], { minConfidence: 'low' })
+  const entry = fieldNamed(report, 'full_name')
+  assert.equal(entry.classification, 'personal-data')
+  assert.equal(entry.confidence, 'low')
+  assert.equal(entry.candidates[0].valuesClassified, false)
+  assert.equal(entry.candidates[0].matched, 0)
+  assert.equal(entry.candidates[0].examined, 0)
+
+  // The qualifiers are what keep it off the columns that merely end in "name".
+  for (const key of ['product_name', 'company_name', 'file_name', 'column_name', 'event_name']) {
+    const quiet = reportFor([{ [key]: 'Anything At All' }], { minConfidence: 'low' })
+    assert.equal(fieldNamed(quiet, key).classification, 'clean', key)
+  }
+})
+
+test('a recogniser left out of the configuration takes its candidates with it', () => {
+  const records = [
+    { contact: 'ada@example.test' }, { contact: 'grace@example.test' },
+    { contact: 'alan@example.test' }, { contact: 'edsger@example.test' },
+  ]
+  const withEmail = reportFor(records)
+  assert.equal(fieldNamed(withEmail, 'contact').classification, 'personal-data')
+
+  const withoutEmail = reportFor(records, { recognisers: ['payment-card', 'phone-number'] })
+  assert.equal(fieldNamed(withoutEmail, 'contact').classification, 'clean')
+  assert.deepEqual(withoutEmail.configuration.recognisers, ['payment-card', 'phone-number'])
+  assert.equal(withoutEmail.status, 'pass')
+})
+
+test('every recogniser declares a basis, a category and a ceiling on its confidence', () => {
+  assert.equal(RECOGNISERS.length, 7)
+  for (const recogniser of RECOGNISERS) {
+    assert.match(recogniser.id, /^[a-z][a-z0-9-]*$/u)
+    assert.ok(['value-pattern', 'value-pattern-checksum', 'field-name-and-value', 'field-name'].includes(recogniser.basis))
+    assert.ok(['low', 'medium', 'high'].includes(recogniser.maxConfidence))
+    // A basis that involves the field name must have a name test, and one that
+    // classifies values must have a value test. The two cannot drift apart.
+    assert.equal(recogniser.basis.includes('field-name'), recogniser.matchesName !== null, recogniser.id)
+    assert.equal(recogniser.basis === 'field-name', recogniser.matchesValue === null, recogniser.id)
+  }
+})
