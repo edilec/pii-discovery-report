@@ -225,8 +225,10 @@ tool does not guess. That is the class of error this design accepts, and
 
 Every value in that corpus is invented and drawn from ranges reserved for
 documentation: `example.test` addresses, the Ofcom and NANP drama telephone
-ranges, published card test numbers, identifier prefixes that are never issued,
-and the TEST-NET blocks. No record in this repository describes a real person.
+ranges, published card test numbers that belong to nobody, identifiers whose
+leading group is one the issuing authority never assigns as a social-security
+number, and the TEST-NET blocks of RFC 5737. No record in this repository
+describes a real person.
 
 ## Non-goals
 

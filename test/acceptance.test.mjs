@@ -8,7 +8,9 @@
  * that the numbers below can be re-derived by anyone. Every value in it is
  * invented and drawn from a range reserved for documentation: `example.test`
  * addresses, the Ofcom and NANP drama telephone ranges, published card test
- * numbers, identifier prefixes that are never issued, and the TEST-NET blocks.
+ * numbers that belong to nobody, identifiers whose leading group is one the
+ * issuing authority never assigns as a social-security number, and the TEST-NET
+ * blocks of RFC 5737.
  *
  * The labels live HERE and nowhere in the tool's input. The tool is never told
  * which fields hold personal data; it is measured against the labels
@@ -131,22 +133,33 @@ test('the false positives on this corpus are measured, not assumed', async () =>
     assert.equal(entry.classification, 'clean', path)
     assert.equal(entry.candidates.length, 0, path)
   }
-  assert.equal(report.findings.filter((finding) => quiet.includes(finding.location.pointer?.slice(1))).length, 0)
+  const quietPointers = new Set(
+    report.fields.filter((entry) => quiet.includes(entry.path)).map((entry) => entry.pointer),
+  )
+  assert.equal(quietPointers.size, 11)
+  assert.deepEqual(
+    report.findings.filter((finding) => quietPointers.has(finding.location.pointer)),
+    [],
+  )
   assert.equal(result.code, 1)
 })
 
-test('lowering the confidence floor changes the measurement, and the change is visible', async () => {
+test('the confidence floor is where the trade-off sits, and moving it is visible in the report', async () => {
   const { report: strict } = await seededReport()
   const { report: loose } = await seededReport(['--min-confidence', 'low'])
   const personalIn = (report) =>
     report.fields.filter((entry) => entry.classification === 'personal-data').map((entry) => entry.path)
 
+  // Lowering the floor to `low` changes NOTHING on this corpus, and that is
+  // worth pinning rather than assuming: every candidate here already reaches
+  // medium except `full_name`, which the configuration acknowledges, so there
+  // is nothing sitting between the two floors to promote.
   assert.equal(personalIn(strict).length, 8)
-  assert.equal(personalIn(loose).length, 8)
+  assert.deepEqual(personalIn(loose), personalIn(strict))
 
-  // `high` is where the trade runs the other way: the two categories whose
-  // basis is not the value alone stop reaching the floor, and both become
-  // uncertain rather than clean.
+  // `high` is where the trade runs the other way: the category whose basis is
+  // not the value alone stops reaching the floor and becomes uncertain rather
+  // than clean.
   const { report: high, result } = await seededReport(['--min-confidence', 'high'])
   assert.deepEqual(
     high.fields.filter((entry) => entry.classification === 'uncertain').map((entry) => entry.path),

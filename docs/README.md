@@ -57,6 +57,7 @@ fails it is counted as unexamined.
 Every value in `examples/` is invented. The addresses use the reserved
 `example.test` domain, the telephone numbers come from the Ofcom and NANP drama
 ranges, the card numbers are the published test values that pass Luhn and belong
-to nobody, the identifier prefixes are in ranges that are never issued, and the
-addresses in `last_seen_ip` are TEST-NET blocks reserved for documentation. No
-record here describes a real person, and none was copied from anywhere.
+to nobody, the `government_id` values use a leading group the issuing authority
+never assigns as a social-security number, and the addresses in `last_seen_ip`
+are the TEST-NET blocks RFC 5737 reserves for documentation. No record here
+describes a real person, and none was copied from anywhere.
