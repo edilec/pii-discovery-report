@@ -285,9 +285,10 @@ function datasetLevelFindings(state, records, limits, file, fieldCount) {
   if (state.unusablePaths > 0) {
     findings.push(makeFinding(
       'field-path-unusable',
-      msg`${String(state.unusablePaths)} key or keys print as nothing or are longer than a field path this
-          tool prints, first in record ${String(state.firstUnusableRecord)}. Their values were not examined,
-          because two such keys would share one line of this report.`,
+      msg`${String(state.unusablePaths)} key or keys cannot be used as a field path, first in record
+          ${String(state.firstUnusableRecord)}: a key prints as nothing, is longer than a path this tool
+          prints, or would not print exactly as it is stored. Their values were not examined, because two
+          such keys would share one line of this report.`,
       at(file, '/records'),
       { suggestion: 'Give every field a printable name shorter than the path limit.' },
     ))
