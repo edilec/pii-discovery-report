@@ -173,3 +173,41 @@ test('the report names what this kind of evidence never settles', () => {
   assert.equal(report.notEstablished.length, 4)
   assert.ok(report.notEstablished.some((line) => line.includes('belongs to a real person')))
 })
+
+test('an array of scalars is one field, and an array of objects one field per key', () => {
+  const report = reportFor([
+    { tags: ['red', 'blue'], orders: [{ email: 'ada@example.test' }, { email: 'grace@example.test' }] },
+    { tags: ['green'], orders: [{ email: 'alan@example.test' }] },
+  ])
+  assert.deepEqual(report.fields.map((entry) => entry.path), ['orders[].email', 'tags[]'])
+  assert.equal(fieldNamed(report, 'tags[]').values.examined, 3)
+  assert.equal(fieldNamed(report, 'tags[]').classification, 'clean')
+
+  const nested = fieldNamed(report, 'orders[].email')
+  assert.equal(nested.values.examined, 3)
+  assert.equal(nested.classification, 'personal-data')
+  assert.equal(nested.category, 'email')
+  // The pointer names the array level rather than one element of it, because a
+  // finding about the third order's address is a finding about the column.
+  assert.equal(nested.pointer, '/orders[]/email')
+  assert.equal(report.status, 'fail')
+})
+
+test('a key whose value is an empty object contributes no field, and nothing is claimed about it', () => {
+  // There is no value under it to classify, so there is nothing to report --
+  // and nothing is reported. The alternative, inventing a clean field for a key
+  // that holds no values, would be a claim about an absence nobody examined.
+  const report = reportFor([{ meta: {}, note: 'plain' }])
+  assert.deepEqual(report.fields.map((entry) => entry.path), ['note'])
+  assert.equal(report.summary.checked, 1)
+  assert.equal(report.status, 'pass')
+})
+
+test('one path holding a string in one record and a number in another examines both', () => {
+  const report = reportFor([{ ref: '987-65-4320' }, { ref: 9876543 }])
+  const entry = fieldNamed(report, 'ref')
+  assert.equal(entry.values.examined, 2)
+  assert.equal(entry.candidates[0].recogniser, 'government-id')
+  assert.equal(entry.candidates[0].matched, 1)
+  assert.equal(entry.candidates[0].examined, 2)
+})
