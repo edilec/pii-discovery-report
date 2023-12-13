@@ -132,6 +132,41 @@ sets the floor at which a candidate becomes a verdict.
 | `undetermined` | at least one value was not examined, or the dataset was not read in full |
 | `clean` | every value in this field was examined, the whole dataset was read, and no recogniser matched |
 
+## What a field entry carries
+
+```json
+{
+  "path": "contact.email",
+  "pointer": "/contact/email",
+  "classification": "personal-data",
+  "category": "email",
+  "categories": ["email"],
+  "categoryCertain": true,
+  "confidence": "high",
+  "acknowledged": false,
+  "values": { "examined": 12, "matched": 12, "unexamined": 0, "tooLong": 0, "notExact": 0, "notApplicable": 0 },
+  "candidates": [
+    { "recogniser": "email-address", "category": "email", "basis": "value-pattern",
+      "confidence": "high", "matched": 12, "examined": 12, "matchRate": 1, "valuesClassified": true }
+  ],
+  "maskedExamples": ["x.xxxx@xxxxxxx.xxxx"]
+}
+```
+
+- `values.matched` is the top candidate's match count; every candidate carries
+  its own counts, so the confidence can be checked rather than trusted.
+- `values.unexamined` is `tooLong + notExact`: values no recogniser saw. While it
+  is above zero the field cannot be `clean`.
+- `values.notApplicable` counts `true`, `false` and `null`. None of them can
+  carry a category this tool recognises, so they do not make the field
+  undetermined.
+- `categoryCertain` answers a question about the CATEGORY and only matters when
+  there is one. It is `false` when two categories reached the floor, or when the
+  classification is `undetermined`; it is `true` for a `clean` field, where the
+  question does not arise.
+- `valuesClassified` is `false` for a candidate whose basis is the field name
+  alone. It means exactly what it says: no value in the column was classified.
+
 ## Rules
 
 | Rule | Severity | Raised when |
