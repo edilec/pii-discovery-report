@@ -112,3 +112,18 @@ test('this tool refuses to write a sentence that claims more than it can know', 
   const built = msg`The field ${'proven_customer'} was examined.`
   assert.equal(built.text, 'The field proven_customer was examined.')
 })
+
+test('prose composed in two halves is checked in both, because a half is not a value', () => {
+  // A message built as a plain template string and then interpolated would be
+  // prose the claim check never sees. Composing with `msg` keeps every literal
+  // inside the check, and the composed half is inserted verbatim rather than
+  // sanitised, because it has already been through it.
+  const half = msg`with ${'a value'} in it`
+  const whole = msg`A sentence ${half}.`
+  assert.equal(whole.text, 'A sentence with a value in it.')
+  assert.throws(() => msg`A sentence ${msg`that is definitely true`}.`, /may not claim more/u)
+
+  // And an untrusted value carrying the same word is still only sanitised: it
+  // is data, and data does not stop the run.
+  assert.equal(msg`Field ${'definitely_paid'} seen.`.text, 'Field definitely_paid seen.')
+})

@@ -308,11 +308,18 @@ function fieldFindings(entry, file) {
   const findings = []
   const pointer = entry.pointer
   if (entry.classification === 'personal-data') {
-    const shown = entry.maskedExamples.length > 0 ? ` Masked example: ${entry.maskedExamples[0]}.` : ''
+    // Both halves are built with `msg` rather than as plain template strings,
+    // because prose interpolated as a VALUE is prose the claim check never
+    // sees. A SafeMessage is inserted verbatim precisely because it has already
+    // been through it.
+    const shown = entry.maskedExamples.length > 0
+      ? msg` Masked example: ${entry.maskedExamples[0]}.`
+      : msg``
     const top = entry.candidates.length > 0 ? entry.candidates[0] : null
     const because = top === null
-      ? 'no recogniser matched any value in it'
-      : `${entry.values.matched} of ${entry.values.examined} values examined matched ${top.recogniser}, basis ${top.basis}`
+      ? msg`no recogniser matched any value in it`
+      : msg`${String(entry.values.matched)} of ${String(entry.values.examined)} values examined matched
+            ${top.recogniser}, basis ${top.basis}`
     if (entry.acknowledged) {
       findings.push(makeFinding(
         'personal-data-acknowledged',
