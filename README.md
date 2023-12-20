@@ -18,7 +18,8 @@ unformatted telephone column also catches every order number, and once a checker
 has sent somebody to redact a product code twice, it is ignored. So every
 recogniser here matches a **whole value**, `payment-card` carries a checksum, and
 `phone-number` refuses a bare run of digits. That costs recall, and the cost is
-written down under [Limits](#limits) rather than hidden.
+written down under [Non-goals](#non-goals) and measured under
+[What was measured](#what-was-measured) rather than hidden.
 
 The second is **a quiet gap**. A report that says a field holds no personal data,
 on a run that skipped a record it could not read, has told you something false in
