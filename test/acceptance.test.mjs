@@ -206,7 +206,7 @@ test('no value from the dataset survives into the report, and the masks that rep
   assert.ok(
     report.findings
       .find((finding) => finding.location.pointer === '/contact/email')
-      .message.includes('Masked example: x.xxxx@xxxxxxx.xxxx.'),
+      .message.includes('basis value-pattern). Masked example: x.xxxx@xxxxxxx.xxxx.'),
   )
   assert.equal(result.code, 1)
 })
