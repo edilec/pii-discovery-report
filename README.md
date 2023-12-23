@@ -221,7 +221,9 @@ and everything else becomes `?`. `alex.doe@example.test` reaches the report as
 
 Each limit is enforced **before** the work it bounds. The file size is taken from
 the file system before any byte is read; the record, field and depth bounds stop
-the traversal rather than trimming its result; and `maxRecords * maxFields` is
+the traversal rather than trimming its result; a value past `maxValueLength` is
+left unexamined rather than shortened, so a cut value is never classified as
+though it were whole; and `maxRecords * maxFields` is
 checked against a cap of 2000000 field observations while the configuration is
 validated, before a file is opened.
 
