@@ -20,6 +20,8 @@ import {
   isRenderableString,
   isUsableName,
   maskValue,
+  num,
+  rate,
   renderReport,
   sanitize,
 } from '../src/index.mjs'
@@ -130,4 +132,18 @@ test('the two separators are escaped on the way out as well as stripped on the w
 test('sanitising bounds the length and marks what it cut', () => {
   assert.equal(sanitize('x'.repeat(200)), 'x'.repeat(200))
   assert.equal(sanitize('x'.repeat(201)), `${'x'.repeat(197)}...`)
+})
+
+test('rounding a report number never turns something into nothing', () => {
+  // `matched: 1` beside `matchRate: 0` is two numbers disagreeing about the
+  // same evidence, and one match in two hundred thousand values rounds to zero.
+  assert.equal(rate(1, 200000), 1 / 200000)
+  assert.equal(rate(1, 4), 0.25)
+  assert.equal(rate(1, 3), 0.3333)
+  assert.equal(rate(0, 10), 0)
+  assert.equal(rate(1, 0), 0)
+  assert.equal(num(0.00001), '0.00001')
+  assert.equal(num(0), '0')
+  assert.equal(num(-0), '0')
+  assert.equal(num(1.23456), '1.2346')
 })

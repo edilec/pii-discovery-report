@@ -116,13 +116,23 @@ export function isUsableName(value, limit = MAX_PATH_LENGTH) {
 export function num(value) {
   if (!Number.isFinite(value)) return describeValue(value)
   const rounded = Math.round(value * 10000) / 10000
+  if (rounded === 0 && value !== 0) return String(value)
   return Object.is(rounded, -0) ? '0' : String(rounded)
 }
 
-/** A rate as a report records it: a finite number, four decimals, never -0. */
+/**
+ * A rate as a report records it: a finite number, four decimals, never -0.
+ *
+ * Rounding must never turn a rate that is not zero INTO zero. One match in two
+ * hundred thousand values rounds to `0`, and `matched: 1` beside `matchRate: 0`
+ * is two numbers disagreeing about the same evidence. A rate too small to
+ * survive the rounding is recorded as it is.
+ */
 export function rate(matched, evaluated) {
   if (evaluated <= 0) return 0
-  const value = Math.round((matched / evaluated) * 10000) / 10000
+  const exact = matched / evaluated
+  const value = Math.round(exact * 10000) / 10000
+  if (value === 0 && exact !== 0) return exact
   return Object.is(value, -0) ? 0 : value
 }
 
