@@ -111,9 +111,15 @@ export function readDataset(document) {
 function newObservation(path, enabled) {
   const name = fieldNameOf(path)
   const nameMatched = new Set()
+  // A name is evidence in both directions. It can select a recogniser whose
+  // basis includes the field name, and it can REFUSE one whose value shape the
+  // name says belongs to something else: a four-part build number in a column
+  // called `app_version` has the shape of a dotted quad and is not an address.
+  const nameRefused = new Set()
   for (const id of enabled) {
     const recogniser = recogniserById(id)
     if (recogniser.matchesName !== null && recogniser.matchesName(name)) nameMatched.add(id)
+    if (recogniser.refusedByName !== null && recogniser.refusedByName(name)) nameRefused.add(id)
   }
   return {
     path,
@@ -123,6 +129,7 @@ function newObservation(path, enabled) {
     notExact: 0,
     matched: new Map(),
     nameMatched,
+    nameRefused,
     examples: [],
   }
 }
@@ -144,6 +151,10 @@ function classifyValue(observation, raw, enabled) {
     // A recogniser whose basis includes the field name only counts values in a
     // field that name selected. A date in `shipped_on` is a date.
     if (recogniser.matchesName !== null && !observation.nameMatched.has(recogniser.id)) continue
+    // And a recogniser the field name refuses counts nothing at all: the column
+    // says what it holds, and this tool does not overrule it with a shape that
+    // reading also has.
+    if (observation.nameRefused.has(recogniser.id)) continue
     if (!recogniser.matchesValue(normalised)) continue
     observation.matched.set(recogniser.id, (observation.matched.get(recogniser.id) ?? 0) + 1)
     matchedAny = true

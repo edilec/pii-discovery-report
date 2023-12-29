@@ -3,6 +3,18 @@
 All notable changes to this tool are recorded here. Rule ids are part of the
 public surface: renaming one is a breaking change and is recorded as such.
 
+## Unreleased
+
+### Fixed
+
+- `network-address` no longer reports a four-part build number as a network
+  identifier. Every value in a column such as `app_version` is a legal dotted
+  quad, so the column was classified `network-identifier` at high confidence and
+  raised `personal-data-detected` at error severity, exit 1, on correct input. A
+  column name that declares a version and says nothing about a network now
+  refuses the recogniser. The cost, named in the README: a column of real
+  addresses called `firmware_version` is missed.
+
 ## 0.1.0
 
 First working version.

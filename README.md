@@ -106,12 +106,25 @@ could not examine.
 | `payment-card` | `payment-card` | value-pattern-checksum | high | 13-19 digits with optional spaces or hyphens, passing the Luhn check |
 | `phone-number` | `phone` | value-pattern | high | a `+` international form of 8-15 digits, or a grouped national form such as `(415) 555-0181` |
 | `government-id` | `government-id` | value-pattern | high | three digits, two digits, four digits, hyphen separated |
-| `network-address` | `network-identifier` | value-pattern | high | a dotted IPv4 quad with no padded octet, or a well-formed IPv6 address |
+| `network-address` | `network-identifier` | value-pattern | high | a dotted IPv4 quad with no padded octet, or a well-formed IPv6 address. **Refused by the column name** when the name says version and says nothing about a network: `1.2.3.4` is a legal address and a legal four-part build number, and the name is the only thing that separates them |
 | `date-of-birth` | `date-of-birth` | field-name-and-value | medium | a date, in a column named for birth. A date is a date: that this one is a birth date is said by the column name, so it cannot reach high |
 | `person-name` | `person-name` | field-name | low | a column named for people. It classifies **no value**, says so in the report, and sits at the lowest confidence the scale has |
 
 `basis` is reported beside every candidate, because it is what a reader needs in
 order to judge the finding.
+
+A column name is evidence in **both** directions. It can select a recogniser, as
+it does for `date-of-birth` and `person-name`; and it can refuse one whose value
+shape the name says belongs to something else. The refusal applies to
+`network-address` alone, because a dotted quad is the only shape in this catalog
+that another common kind of column takes in full. A name is read as declaring a
+version when one of its words is `version`, `build`, `revision`, `release`,
+`firmware` or `semver` and none of them is `ip`, `ipv4`, `ipv6`, `addr`,
+`address`, `host`, `hostname`, `gateway`, `subnet`, `netmask` or `cidr` -- so
+`app_version` refuses the reading and `build_server_ip` does not. The cost is a
+column of real addresses named `firmware_version`, which is missed; that is the
+same trade as whole-value matching, and it is listed under
+[Non-goals](#non-goals).
 
 ## Confidence
 
@@ -278,6 +291,11 @@ describes a real person.
 - **It does not read free text.** A recogniser matches a whole value, so an
   address quoted inside a note is not found. Prose scanning is where false
   positives come from, and this tool trades that recall away deliberately.
+- **It does not overrule a column name with a shape that name also has.** A
+  column whose name declares a version is not read as holding network addresses,
+  so addresses in `firmware_version` are missed. The alternative was reporting
+  every four-part build number as a network identifier at error severity, which
+  is the one kind of error this design refuses to make.
 - **It does not read a clock.** No wall-clock time, locale or filesystem order
   reaches the output; two runs over one document produce byte-identical stdout.
 - **It is not a compliance assessment.** It reports the shape of values. Whether

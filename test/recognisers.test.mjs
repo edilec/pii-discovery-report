@@ -51,6 +51,40 @@ test('email-address: the near-misses first', () => {
   assert.equal(matches('email-address', 'ada.lovelace+notes@mail.example.test'), true)
 })
 
+test('a four-part build number is not a network address, and the run stays at exit 0', () => {
+  // The defect this pins: every one of these values is a legal dotted quad, so
+  // the column was classified network-identifier at HIGH confidence and raised
+  // `personal-data-detected` at ERROR severity -- a finding on correct input.
+  const versions = ['1.2.3.4', '2.0.0.1', '10.4.0.2', '11.0.1.3', '9.8.7.6', '1.0.0.0']
+  const report = reportFor(versions.map((value) => ({ app_version: value, rollout: 'stable' })))
+  assert.deepEqual(report.findings, [])
+  assert.equal(report.status, 'pass')
+  assert.equal(fieldNamed(report, 'app_version').classification, 'clean')
+  assert.deepEqual(fieldNamed(report, 'app_version').candidates, [])
+  // The refusal is the COLUMN NAME's, not the value pattern's: the same value
+  // in a column that does not claim to hold a version is still an address.
+  assert.equal(matches('network-address', '1.2.3.4'), true)
+  assert.equal(fieldNamed(reportFor(versions.map((v) => ({ source: v }))), 'source').classification, 'personal-data')
+})
+
+test('a name that says version AND says network refuses nothing', () => {
+  const addresses = ['203.0.113.42', '198.51.100.7', '192.0.2.9', '203.0.113.5']
+  const report = reportFor(addresses.map((value) => ({
+    last_seen_ip: value,
+    build_server_ip: value,
+    firmware_version: value,
+  })))
+  for (const path of ['last_seen_ip', 'build_server_ip']) {
+    const entry = fieldNamed(report, path)
+    assert.equal(entry.classification, 'personal-data', path)
+    assert.equal(entry.category, 'network-identifier', path)
+    assert.equal(entry.confidence, 'high', path)
+  }
+  // The documented cost of the refusal, pinned so that it is a decision and not
+  // a surprise: a column of real addresses named for firmware is missed.
+  assert.equal(fieldNamed(report, 'firmware_version').classification, 'clean')
+})
+
 test('a recogniser matches a whole value, never a fragment of prose', () => {
   // Documented as a limit rather than hidden: scanning prose for embedded
   // identifiers is how a checker starts reporting defects on correct input.

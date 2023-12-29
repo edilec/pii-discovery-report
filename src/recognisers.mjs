@@ -86,6 +86,45 @@ export function maskValue(value) {
   return masked
 }
 
+/**
+ * Column names that declare a reading a dotted quad ALSO has.
+ *
+ * `1.2.3.4` is a legal IPv4 address and a legal four-part build number, and
+ * nothing inside the value separates the two: every octet is under 256 and none
+ * is padded, which is exactly what a build number looks like. Reporting such a
+ * column as a network identifier at error severity is a finding on correct
+ * input -- the worst defect this kind of tool can have -- and it was reported
+ * against this tool on the column `app_version`.
+ *
+ * What separates the readings is the name the exporter gave the column, which
+ * this tool already treats as evidence in the other direction: a date in
+ * `shipped_on` is a date and not a birth date. So a name that declares a
+ * version refuses the network reading, and a name that declares BOTH -- say
+ * `build_server_ip` -- refuses nothing, because the network token is the more
+ * specific statement about what the column holds.
+ *
+ * This is a deliberate loss of recall, in the same trade as whole-value
+ * matching: a column of real addresses named `firmware_version` is missed. The
+ * README names it beside the other losses rather than hiding it.
+ */
+const VERSION_NAME_TOKENS = new Set(['version', 'build', 'revision', 'release', 'firmware', 'semver'])
+const NETWORK_NAME_TOKENS = new Set([
+  'ip', 'ipv4', 'ipv6', 'addr', 'address', 'host', 'hostname', 'gateway', 'subnet', 'netmask', 'cidr',
+])
+
+/** The words in a column name: anything that is not a letter or a digit separates them. */
+function nameTokens(name) {
+  return name.split(/[^a-z0-9]+/u).filter((token) => token !== '')
+}
+
+function declaresVersionAndNotNetwork(name) {
+  const tokens = nameTokens(name)
+  return (
+    tokens.some((token) => VERSION_NAME_TOKENS.has(token))
+    && !tokens.some((token) => NETWORK_NAME_TOKENS.has(token))
+  )
+}
+
 /** The field name a name-based recogniser is asked about: the last path segment. */
 export function fieldNameOf(path) {
   const segments = path.split('.')
@@ -211,6 +250,7 @@ export const RECOGNISERS = Object.freeze([
     maxConfidence: 'high',
     checksum: false,
     matchesName: null,
+    refusedByName: null,
     matchesValue: (value) => EMAIL.test(value),
   }),
   Object.freeze({
@@ -220,6 +260,7 @@ export const RECOGNISERS = Object.freeze([
     maxConfidence: 'high',
     checksum: true,
     matchesName: null,
+    refusedByName: null,
     matchesValue: (value) => CARD_SHAPE.test(value) && luhnValid(digitsOf(value)),
   }),
   Object.freeze({
@@ -229,6 +270,7 @@ export const RECOGNISERS = Object.freeze([
     maxConfidence: 'high',
     checksum: false,
     matchesName: null,
+    refusedByName: null,
     matchesValue: phoneMatches,
   }),
   Object.freeze({
@@ -238,6 +280,7 @@ export const RECOGNISERS = Object.freeze([
     maxConfidence: 'high',
     checksum: false,
     matchesName: null,
+    refusedByName: null,
     matchesValue: (value) => GOVERNMENT_ID.test(value),
   }),
   Object.freeze({
@@ -247,6 +290,8 @@ export const RECOGNISERS = Object.freeze([
     maxConfidence: 'high',
     checksum: false,
     matchesName: null,
+    // The one recogniser whose value shape belongs to something else as well.
+    refusedByName: declaresVersionAndNotNetwork,
     matchesValue: ipMatches,
   }),
   Object.freeze({
@@ -260,6 +305,7 @@ export const RECOGNISERS = Object.freeze([
     maxConfidence: 'medium',
     checksum: false,
     matchesName: (name) => BIRTH_FIELD.test(name),
+    refusedByName: null,
     matchesValue: dateShape,
   }),
   Object.freeze({
@@ -273,6 +319,7 @@ export const RECOGNISERS = Object.freeze([
     maxConfidence: 'low',
     checksum: false,
     matchesName: (name) => PERSON_NAME_FIELD.test(name),
+    refusedByName: null,
     matchesValue: null,
   }),
 ])

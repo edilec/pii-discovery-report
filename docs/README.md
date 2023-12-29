@@ -39,6 +39,17 @@ refuses a bare run of digits are all deliberate losses of recall, bought to keep
 the output worth reading. The measured consequence is in the README, including
 the one false positive the shipped corpus produces.
 
+A column name is also evidence AGAINST a reading, and missing that produced the
+sharpest defect this tool has had: `1.2.3.4` is a legal IPv4 address and a legal
+four-part build number, so a column of build numbers was reported as a network
+identifier at high confidence, at error severity, exit 1 -- a finding on correct
+input. Nothing in the value distinguishes the two readings; the column name does,
+and the tool was already using a column name in the other direction. So
+`network-address` carries `refusedByName`, and a name that declares a version
+while saying nothing about a network refuses it. `network-address` is the only
+recogniser with a refusal, because a dotted quad is the only shape here that
+another ordinary kind of column takes in full.
+
 Two recognisers rest partly or wholly on the name of a column, and the report
 says so in every candidate through `basis`. `person-name` classifies no value at
 all and carries `valuesClassified: false`, because nothing about the characters
