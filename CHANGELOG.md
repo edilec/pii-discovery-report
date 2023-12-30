@@ -7,6 +7,14 @@ public surface: renaming one is a breaking change and is recorded as such.
 
 ### Fixed
 
+- `payment-card` no longer draws a candidate from a Luhn collision. A Luhn check
+  accepts one uniformly random digit string in ten at any length, so two of
+  twelve internal sixteen-digit order numbers matched by chance and a clean run
+  ended `incomplete` at exit 2. The recogniser now also requires an issuer
+  identification number (ISO/IEC 7812-1) that a card network issues at that
+  length, which takes a sixteen-digit reference from one in ten to 0.02833. The
+  cost, named in the README: a card from a network the table does not list.
+
 - `network-address` no longer reports a four-part build number as a network
   identifier. Every value in a column such as `app_version` is a legal dotted
   quad, so the column was classified `network-identifier` at high confidence and

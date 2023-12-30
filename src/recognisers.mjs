@@ -166,6 +166,71 @@ export function luhnValid(digits) {
   return sum % 10 === 0
 }
 
+/**
+ * The issuer identification numbers a payment card can carry.
+ *
+ * A Luhn check alone is not a card number. Luhn accepts one digit string in ten
+ * whatever its length, so a column of internal references draws a payment-card
+ * candidate by chance: twelve sixteen-digit order numbers produced two matches
+ * here and turned a clean run into `incomplete` at exit 2, which is a finding on
+ * correct input.
+ *
+ * What separates a primary account number from any other run of digits is its
+ * ISSUER IDENTIFICATION NUMBER. ISO/IEC 7812-1 assigns the leading digits to an
+ * issuer, and each card network publishes the prefix ranges and the lengths it
+ * issues; a number outside every one of them was not issued as a payment card.
+ *
+ * Each row is a prefix range compared digit for digit across the same number of
+ * leading digits, with the lengths that network issues. The table is
+ * deliberately conservative -- a card from a network not listed here is missed,
+ * which is the same trade as whole-value matching -- and it is the only claim in
+ * this file that rests on a fact outside the value, so the row it comes from is
+ * named beside it.
+ */
+const CARD_LENGTHS_12_TO_19 = Object.freeze([12, 13, 14, 15, 16, 17, 18, 19])
+const CARD_LENGTHS_16_TO_19 = Object.freeze([16, 17, 18, 19])
+
+const CARD_RANGES = Object.freeze([
+  // American Express
+  Object.freeze({ from: '34', to: '34', lengths: Object.freeze([15]) }),
+  Object.freeze({ from: '37', to: '37', lengths: Object.freeze([15]) }),
+  // Diners Club
+  Object.freeze({ from: '300', to: '305', lengths: Object.freeze([14]) }),
+  Object.freeze({ from: '3095', to: '3095', lengths: Object.freeze([14]) }),
+  Object.freeze({ from: '36', to: '36', lengths: Object.freeze([14]) }),
+  Object.freeze({ from: '38', to: '39', lengths: Object.freeze([14]) }),
+  // JCB
+  Object.freeze({ from: '3528', to: '3589', lengths: CARD_LENGTHS_16_TO_19 }),
+  // Visa
+  Object.freeze({ from: '4', to: '4', lengths: Object.freeze([13, 16, 19]) }),
+  // Maestro
+  Object.freeze({ from: '50', to: '50', lengths: CARD_LENGTHS_12_TO_19 }),
+  Object.freeze({ from: '56', to: '58', lengths: CARD_LENGTHS_12_TO_19 }),
+  Object.freeze({ from: '639', to: '639', lengths: CARD_LENGTHS_12_TO_19 }),
+  Object.freeze({ from: '67', to: '67', lengths: CARD_LENGTHS_12_TO_19 }),
+  // Mastercard
+  Object.freeze({ from: '51', to: '55', lengths: Object.freeze([16]) }),
+  Object.freeze({ from: '2221', to: '2720', lengths: Object.freeze([16]) }),
+  // UnionPay
+  Object.freeze({ from: '62', to: '62', lengths: CARD_LENGTHS_16_TO_19 }),
+  // Discover
+  Object.freeze({ from: '6011', to: '6011', lengths: Object.freeze([16, 19]) }),
+  Object.freeze({ from: '644', to: '649', lengths: Object.freeze([16, 19]) }),
+  Object.freeze({ from: '65', to: '65', lengths: Object.freeze([16, 19]) }),
+])
+
+/** Whether these digits could have been issued by one of the networks above. */
+export function issuedRange(digits) {
+  for (const range of CARD_RANGES) {
+    if (!range.lengths.includes(digits.length)) continue
+    // Both sides are the same number of digit characters, so a code-unit
+    // comparison is a numeric comparison.
+    const prefix = digits.slice(0, range.from.length)
+    if (prefix >= range.from && prefix <= range.to) return true
+  }
+  return false
+}
+
 function phoneMatches(value) {
   if (PHONE_INTERNATIONAL.test(value)) {
     const digits = digitsOf(value).length
@@ -261,7 +326,11 @@ export const RECOGNISERS = Object.freeze([
     checksum: true,
     matchesName: null,
     refusedByName: null,
-    matchesValue: (value) => CARD_SHAPE.test(value) && luhnValid(digitsOf(value)),
+    matchesValue: (value) => {
+      if (!CARD_SHAPE.test(value)) return false
+      const digits = digitsOf(value)
+      return issuedRange(digits) && luhnValid(digits)
+    },
   }),
   Object.freeze({
     id: 'phone-number',

@@ -103,7 +103,7 @@ could not examine.
 | Recogniser | Category | Basis | Ceiling | What it matches |
 | --- | --- | --- | --- | --- |
 | `email-address` | `email` | value-pattern | high | a whole value with a local part, `@`, and a dotted domain ending in 2-24 letters |
-| `payment-card` | `payment-card` | value-pattern-checksum | high | 13-19 digits with optional spaces or hyphens, passing the Luhn check |
+| `payment-card` | `payment-card` | value-pattern-checksum | high | digits with optional spaces or hyphens, carrying an issuer identification number a card network issues at that length, and passing the Luhn check |
 | `phone-number` | `phone` | value-pattern | high | a `+` international form of 8-15 digits, or a grouped national form such as `(415) 555-0181` |
 | `government-id` | `government-id` | value-pattern | high | three digits, two digits, four digits, hyphen separated |
 | `network-address` | `network-identifier` | value-pattern | high | a dotted IPv4 quad with no padded octet, or a well-formed IPv6 address. **Refused by the column name** when the name says version and says nothing about a network: `1.2.3.4` is a legal address and a legal four-part build number, and the name is the only thing that separates them |
@@ -125,6 +125,26 @@ version when one of its words is `version`, `build`, `revision`, `release`,
 column of real addresses named `firmware_version`, which is missed; that is the
 same trade as whole-value matching, and it is listed under
 [Non-goals](#non-goals).
+
+A Luhn check on its own is not a card number: it accepts one uniformly random
+digit string in ten, whatever the length, so a column of internal order numbers
+draws a `payment-card` candidate by chance and an otherwise clean run ends
+`incomplete`. So `payment-card` also requires an **issuer identification
+number** (ISO/IEC 7812-1): the leading digits must fall in a range one of the
+card networks issues, at a length that network issues. Enumerating every
+four-digit prefix -- no range in the table is longer than four -- gives the
+measured effect:
+
+| Length | Prefixes a network issues | Reaching `payment-card` by chance |
+| ---: | ---: | ---: |
+| 16 | 2833 of 10000 | 0.02833, from 0.1 |
+| 15 | 710 of 10000 | 0.00710, from 0.1 |
+
+`test/recognisers.test.mjs` re-derives both counts from the table itself, so
+widening it changes the test and this section together. The cost is a card from
+a network the table does not list, which is missed; the networks it lists are
+American Express, Diners Club, JCB, Visa, Maestro, Mastercard, UnionPay and
+Discover.
 
 ## Confidence
 
@@ -291,6 +311,10 @@ describes a real person.
 - **It does not read free text.** A recogniser matches a whole value, so an
   address quoted inside a note is not found. Prose scanning is where false
   positives come from, and this tool trades that recall away deliberately.
+- **It does not report a card number from an unlisted network.** `payment-card`
+  requires an issuer identification number as well as the Luhn check, so a
+  network missing from that table is missed. Luhn alone made a column of order
+  numbers uncertain by chance, and a checker that does that is not read twice.
 - **It does not overrule a column name with a shape that name also has.** A
   column whose name declares a version is not read as holding network addresses,
   so addresses in `firmware_version` are missed. The alternative was reporting

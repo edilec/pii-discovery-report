@@ -12,7 +12,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { RECOGNISERS, normaliseValue, recogniserById } from '../src/index.mjs'
+import { RECOGNISERS, issuedRange, luhnValid, normaliseValue, recogniserById } from '../src/index.mjs'
 import { fieldNamed, reportFor } from './helpers.mjs'
 
 function matches(id, value) {
@@ -117,6 +117,55 @@ test('payment-card: the check digit is what keeps it off ordinary numbers', () =
   assert.equal(matches('payment-card', '4111 1111 1111 1112'), false)
   assert.equal(matches('payment-card', '4901234512345'), false)
   assert.equal(matches('payment-card', '123456789012'), false)
+})
+
+test('payment-card: a column of internal order numbers is not a card column', () => {
+  // The defect this pins. Luhn accepts one digit string in ten whatever the
+  // length, so two of these twelve references passed it by chance, the field
+  // became `uncertain`, and a clean run ended `incomplete` at exit 2. Both of
+  // the two are named here so the case cannot quietly stop being the case.
+  const orders = Array.from({ length: 12 }, (unused, index) => `88${String(1000001 + index).padStart(14, '0')}`)
+  assert.equal(luhnValid('8800000001000004'), true)
+  assert.equal(luhnValid('8800000001000012'), true)
+  assert.equal(matches('payment-card', '8800000001000004'), false)
+  const report = reportFor(orders.map((order_number) => ({ order_number })))
+  assert.deepEqual(report.findings, [])
+  assert.equal(report.status, 'pass')
+  assert.equal(fieldNamed(report, 'order_number').classification, 'clean')
+})
+
+test('payment-card: every published network test number still matches', () => {
+  // The recall side of the same guard. These are the numbers the networks
+  // publish for testing; they belong to nobody and they are what the narrowing
+  // must not cost.
+  for (const value of [
+    '4111 1111 1111 1111', '4012 8888 8888 1881', '4222222222222',
+    '5555 5555 5555 4444', '5105 1051 0510 5100', '2223003122003222',
+    '378282246310005', '371449635398431',
+    '30569309025904', '38520000023237',
+    '3530111333300000', '6011111111111117', '6759649826438453',
+  ]) {
+    assert.equal(matches('payment-card', value), true, value)
+  }
+})
+
+test('payment-card: the issuer table is what the measured chance rate rests on', () => {
+  // Re-derived rather than asserted: every four-digit prefix is enumerated, so
+  // widening the table by one range changes this number and the README's
+  // measured rate with it. Four digits is exact -- no range in the table is
+  // longer than four.
+  const prefixesAtLength = (length) => {
+    let hits = 0
+    for (let prefix = 0; prefix < 10000; prefix += 1) {
+      if (issuedRange(String(prefix).padStart(4, '0') + '0'.repeat(length - 4))) hits += 1
+    }
+    return hits
+  }
+  assert.equal(prefixesAtLength(16), 2833)
+  assert.equal(prefixesAtLength(15), 710)
+  // A Luhn check passes one uniformly random digit string in ten, so a
+  // sixteen-digit reference reaches `payment-card` by chance at 0.2833 / 10.
+  assert.equal(Math.round((2833 / 10000 / 10) * 100000) / 100000, 0.02833)
 })
 
 test('government-id: only the grouped shape, and it collides with internal references by design', () => {

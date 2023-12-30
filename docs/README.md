@@ -34,9 +34,17 @@ quietly. A dropped entry would silently un-acknowledge a field.
 ## Why the recognisers are narrow
 
 A checker that reports a defect on correct input is worse than one that misses.
-Whole-value matching, a checksum on `payment-card`, and a `phone-number` that
-refuses a bare run of digits are all deliberate losses of recall, bought to keep
-the output worth reading. The measured consequence is in the README, including
+Whole-value matching, an issuer range and a checksum on `payment-card`, and a
+`phone-number` that refuses a bare run of digits are all deliberate losses of
+recall, bought to keep the output worth reading.
+
+The checksum by itself was not enough, and the arithmetic says why: Luhn accepts
+one uniformly random digit string in ten at any length, so twelve internal order
+numbers produce a match about as often as not. Two of twelve did, and a clean run
+ended `incomplete` at exit 2. A primary account number is not any Luhn-passing
+run of digits -- ISO/IEC 7812-1 assigns its leading digits to an issuer, and each
+network issues fixed lengths -- so the issuer range is checked as well, which
+takes a sixteen-digit reference from one in ten to 0.02833. The measured consequence is in the README, including
 the one false positive the shipped corpus produces.
 
 A column name is also evidence AGAINST a reading, and missing that produced the
