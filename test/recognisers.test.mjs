@@ -234,6 +234,25 @@ test('person-name: found by the column name, and it says no value was classified
   }
 })
 
+test('person-name: a bare "name" column is not a person name, in either direction', () => {
+  // The defect this pins: `name` drew a person-name candidate, the field became
+  // `uncertain` at low confidence, and an ordinary product catalogue exited 2.
+  const catalogue = reportFor(
+    [{ name: 'Hex Bolt M8', sku: 'LDN-0001' }, { name: 'Cable Gland 20mm', sku: 'LDN-0002' }],
+    { minConfidence: 'low' },
+  )
+  assert.deepEqual(catalogue.findings, [])
+  assert.equal(catalogue.status, 'pass')
+  assert.equal(fieldNamed(catalogue, 'name').classification, 'clean')
+
+  // The names that say person and nothing else still do.
+  for (const key of ['surname', 'forename', 'full_name', 'customer_name', 'patient_name']) {
+    const found = reportFor([{ [key]: 'Avery Stone' }], { minConfidence: 'low' })
+    assert.equal(fieldNamed(found, key).classification, 'personal-data', key)
+    assert.equal(fieldNamed(found, key).category, 'person-name', key)
+  }
+})
+
 test('a recogniser left out of the configuration takes its candidates with it', () => {
   const records = [
     { contact: 'ada@example.test' }, { contact: 'grace@example.test' },

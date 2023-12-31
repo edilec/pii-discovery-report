@@ -7,6 +7,13 @@ public surface: renaming one is a breaking change and is recorded as such.
 
 ### Fixed
 
+- `person-name` no longer matches a column named exactly `name`. The recogniser
+  classifies no value, so a product catalogue with a `name` column became
+  `uncertain` at low confidence and a correct run ended `incomplete` at exit 2.
+  `surname`, `forename` and the `*_name` family are unchanged. The cost, named in
+  the README: a `name` column that does hold people is reported `clean` unless
+  the configuration acknowledges it.
+
 - `payment-card` no longer draws a candidate from a Luhn collision. A Luhn check
   accepts one uniformly random digit string in ten at any length, so two of
   twelve internal sixteen-digit order numbers matched by chance and a clean run

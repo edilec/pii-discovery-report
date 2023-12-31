@@ -108,7 +108,7 @@ could not examine.
 | `government-id` | `government-id` | value-pattern | high | three digits, two digits, four digits, hyphen separated |
 | `network-address` | `network-identifier` | value-pattern | high | a dotted IPv4 quad with no padded octet, or a well-formed IPv6 address. **Refused by the column name** when the name says version and says nothing about a network: `1.2.3.4` is a legal address and a legal four-part build number, and the name is the only thing that separates them |
 | `date-of-birth` | `date-of-birth` | field-name-and-value | medium | a date, in a column named for birth. A date is a date: that this one is a birth date is said by the column name, so it cannot reach high |
-| `person-name` | `person-name` | field-name | low | a column named for people. It classifies **no value**, says so in the report, and sits at the lowest confidence the scale has |
+| `person-name` | `person-name` | field-name | low | a column named for people: `full_name`, `first_name`, `customer_name` and the rest of that family, plus `surname` and `forename`. A column named exactly `name` is **not** one of them. It classifies **no value**, says so in the report, and sits at the lowest confidence the scale has |
 
 `basis` is reported beside every candidate, because it is what a reader needs in
 order to judge the finding.
@@ -311,6 +311,11 @@ describes a real person.
 - **It does not read free text.** A recogniser matches a whole value, so an
   address quoted inside a note is not found. Prose scanning is where false
   positives come from, and this tool trades that recall away deliberately.
+- **It does not read a bare `name` column as a person's name.** `name` names a
+  product, a place, a file or a queue as often as a person, and `person-name`
+  classifies no value, so a catalogue was reported `uncertain` at exit 2 on
+  correct input. A column that holds people is named for them -- `full_name`,
+  `customer_name`, `surname` -- or is acknowledged in the configuration.
 - **It does not report a card number from an unlisted network.** `payment-card`
   requires an issuer identification number as well as the Luhn check, so a
   network missing from that table is missed. Luhn alone made a column of order

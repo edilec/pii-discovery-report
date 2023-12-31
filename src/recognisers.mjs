@@ -290,8 +290,23 @@ function dateShape(value) {
   return first >= 1 && first <= 31 && second >= 1 && second <= 31 && (first <= 12 || second <= 12)
 }
 
+/**
+ * Column names that say the column holds people's names.
+ *
+ * A bare `name` is deliberately NOT one of them. It is one of the most common
+ * column names there is and it names a product, a place, a file or a queue as
+ * often as a person, so matching it made an ordinary catalogue `uncertain` and
+ * ended a correct run at exit 2 -- noise on correct input, from the one
+ * recogniser that classifies no value and so can never be confirmed by one.
+ * `surname` and `forename` stay: neither names anything but a person.
+ *
+ * The cost is a column named exactly `name` that does hold people's names,
+ * which is reported `clean`. It is in the README beside the other recall this
+ * design trades away, with the two ways to recover it: name the column for what
+ * it holds, or acknowledge it in the configuration.
+ */
 const PERSON_NAME_FIELD =
-  /^(?:first|last|given|family|middle|full|contact|customer|employee|patient|user)_?name$|^(?:name|surname|forename)$/u
+  /^(?:first|last|given|family|middle|full|contact|customer|employee|patient|user)_?name$|^(?:surname|forename)$/u
 const BIRTH_FIELD = /^(?:dob|date_of_birth|birth_date|birthdate|birthday|born_on)$/u
 
 /**
