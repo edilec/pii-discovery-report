@@ -7,6 +7,16 @@ public surface: renaming one is a breaking change and is recorded as such.
 
 ### Fixed
 
+- A field path is now composed by ESCAPING each key, and read back with a parser
+  rather than by splitting on `.`. A flat column named `contact.email` and a
+  nested `contact` holding `email` composed to the same path, so they became one
+  report entry with one merged match rate -- 4 of 8, for two fields that were 4
+  of 4 and 0 of 4 -- and acknowledging one of them silenced the other at exit 0,
+  status `pass`. A column literally named `tags[]` collided with the array `tags`
+  the same way, and the pointer reproduced the collision even where the paths
+  differed. `\`, `.`, `[` and `]` in a key are escaped with a backslash, which
+  changes the path an `acknowledged` entry must name for such a key.
+
 - `person-name` no longer matches a column named exactly `name`. The recogniser
   classifies no value, so a product catalogue with a `name` column became
   `uncertain` at low confidence and a correct run ended `incomplete` at exit 2.

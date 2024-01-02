@@ -71,6 +71,24 @@ document. Accepting the first would silently merge them in the report, so the
 rule is equality between the stored form and the printed form, and a key that
 fails it is counted as unexamined.
 
+That rule removes the SANITISING collision, and for a while this section claimed
+it removed the collision, full stop. It did not, and the sentence was worse than
+silence because the next reader checked the code against it and stopped looking.
+A path is also COMPOSED, by joining keys with `.` and marking an array level with
+`[]`, and a key may contain both: a flat column named `contact.email` and a
+nested `contact` holding `email` composed to the same path, merged into one
+report entry with one match rate of 0.5 over two fields that were 1.0 and 0.0,
+and one `acknowledged` entry silenced the other at exit 0. A column literally
+named `tags[]` collided with the array `tags` the same way, and the pointer --
+built by splitting the composed path back on `.` -- reproduced the collision even
+where the paths differed.
+
+So a key is escaped into its segment (`escapePathSegment`) and a path is read
+back with a parser (`splitFieldPath`), which is the only thing in this tool
+allowed to take a path apart. Both are exercised by `test/paths.test.mjs` through
+the report and through the CLI exit code, because the failure this prevents is an
+exit code and not a string.
+
 ## Fixtures
 
 Every value in `examples/` is invented. The addresses use the reserved

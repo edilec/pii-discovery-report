@@ -22,6 +22,8 @@
  *    telephone number, and this tool does not guess between them.
  */
 
+import { splitFieldPath } from './text.mjs'
+
 /** Ordered weakest to strongest. Comparisons use the index, never the string. */
 export const CONFIDENCE_ORDER = Object.freeze(['low', 'medium', 'high'])
 
@@ -125,11 +127,18 @@ function declaresVersionAndNotNetwork(name) {
   )
 }
 
-/** The field name a name-based recogniser is asked about: the last path segment. */
+/**
+ * The field name a name-based recogniser is asked about: the last key of the
+ * path, exactly as the document stores it.
+ *
+ * It goes through `splitFieldPath` rather than `split('.')` because a key may
+ * contain a dot: splitting on the character would hand `email` to the
+ * recognisers for a flat column named `contact.email`, which is a different
+ * field from the nested one that name describes.
+ */
 export function fieldNameOf(path) {
-  const segments = path.split('.')
-  const last = segments[segments.length - 1] ?? path
-  return last.replace(/\[\]$/u, '').toLowerCase()
+  const segments = splitFieldPath(path)
+  return segments[segments.length - 1].key.toLowerCase()
 }
 
 const EMAIL = /^[^\s@,;<>"'\\]{1,64}@(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}$/iu

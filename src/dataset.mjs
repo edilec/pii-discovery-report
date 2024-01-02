@@ -22,7 +22,15 @@ import {
   normaliseValue,
   recogniserById,
 } from './recognisers.mjs'
-import { MAX_PATH_LENGTH, byCodeUnit, isRenderableString, isUsableName, pointerToken } from './text.mjs'
+import {
+  MAX_PATH_LENGTH,
+  byCodeUnit,
+  escapePathSegment,
+  isRenderableString,
+  isUsableName,
+  pointerToken,
+  splitFieldPath,
+} from './text.mjs'
 
 export const DATASET_SCHEMA_VERSION = '1'
 
@@ -252,13 +260,21 @@ export function observeRecords(records, limits, enabled) {
         // A key that prints as nothing, one longer than a path may print, and
         // one that merely survives sanitising all collapse two different fields
         // into one line of the report, so each is counted as unexamined rather
-        // than printed wrong.
+        // than printed wrong. A key containing `.` or `[]` passes this check --
+        // it prints as it is stored -- and is kept apart by escaping it into the
+        // path below, which is a different collision with a different remedy.
         if (!isUsableName(key, MAX_PATH_LENGTH)) {
           state.unusablePaths += 1
           if (state.firstUnusableRecord === null) state.firstUnusableRecord = recordIndex
           continue
         }
-        walk(value[key], path === '' ? key : `${path}.${key}`, depth + 1, recordIndex)
+        // The key is ESCAPED into the path. A key may legally contain the
+        // characters a path is composed from, and joining them raw merged a
+        // flat column named `contact.email` with the nested contact->email
+        // into one entry -- one match rate, one pointer, and one
+        // acknowledgement silencing a field nobody named.
+        const segment = escapePathSegment(key)
+        walk(value[key], path === '' ? segment : `${path}.${segment}`, depth + 1, recordIndex)
       }
       return
     }
@@ -283,9 +299,14 @@ export function observeRecords(records, limits, enabled) {
 /**
  * The pointer form this tool documents: the field path, one segment per level.
  *
- * Each segment is escaped as a JSON Pointer token, because a dataset key may
- * legally contain `/` or `~` and an unescaped one would name a different field.
+ * The path is split by `splitFieldPath`, never on the `.` character: a flat
+ * column named `contact.email` is one segment and the nested contact->email is
+ * two, and splitting on the character gave both of them the pointer
+ * `/contact/email`. Each key is then escaped as a JSON Pointer token, because a
+ * dataset key may legally contain `/` or `~` and an unescaped one would name a
+ * different field again.
  */
 export function pointerForPath(path) {
-  return `/${path.split('.').map((segment) => pointerToken(segment)).join('/')}`
+  const tokens = splitFieldPath(path).map(({ segment }) => pointerToken(segment))
+  return `/${tokens.join('/')}`
 }

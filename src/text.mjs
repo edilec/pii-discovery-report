@@ -100,8 +100,12 @@ export const MAX_FIELD_PATH_LENGTH = 512
  * SURVIVES sanitising is not safe to use as an identity: `a<U+0001>b` and `a b`
  * both print as `a b`, so one of them would silently become the other in the
  * report while remaining two different fields in the document. Requiring the
- * name to print EXACTLY as it is stored removes the collision, and a key that
- * fails is counted as unexamined rather than printed wrong.
+ * name to print EXACTLY as it is stored removes THAT collision -- and only that
+ * one. The other collision is composition, and it is closed by
+ * `escapePathSegment` rather than here: a key may contain the `.` and `[]` a
+ * path is built from, and this check accepts such a key because it prints
+ * exactly as it is stored. A key that fails this one is counted as unexamined
+ * rather than printed wrong.
  */
 export function isUsableName(value, limit = MAX_PATH_LENGTH) {
   return (
@@ -110,6 +114,78 @@ export function isUsableName(value, limit = MAX_PATH_LENGTH) {
     && value.length <= limit
     && sanitize(value, limit) === value
   )
+}
+
+/**
+ * Compose one document key into one segment of a field path.
+ *
+ * A field path is built by joining keys with `.`, and an array level is marked
+ * with `[]`. Both markers can occur INSIDE a key -- JSON says nothing about what
+ * a key may contain -- and joining without escaping them collapses two different
+ * fields onto one path. That is not hypothetical: a flat column literally named
+ * `contact.email` and a nested `contact` object holding `email` produced ONE
+ * report entry with one merged match rate, and acknowledging the flat column
+ * silenced the nested one, at exit 0 and status `pass`.
+ *
+ * So `\`, `.`, `[` and `]` are escaped with a backslash. An escaped key can
+ * therefore never contain a bare `[` or `]`, which is what makes an array marker
+ * in a composed path unambiguous, and `splitFieldPath` inverts this exactly.
+ *
+ * A path is shown to the reader in this composed form and compared in it, so an
+ * `acknowledged` entry for a key containing one of these characters is written
+ * the same way.
+ */
+export function escapePathSegment(key) {
+  return key.replace(/[\\.[\]]/gu, (character) => `\\${character}`)
+}
+
+/**
+ * Split a composed field path back into the keys it was built from.
+ *
+ * One entry per level: `key` is the key exactly as the document stores it,
+ * `arrays` is how many array levels were walked at that key, and `segment` is
+ * the composed text of that level -- the escaped key with its markers, which is
+ * what a pointer token is built from. Nothing else in this tool may split a
+ * path on `.`, because that is the same collision arriving through the back
+ * door: the pointer printed for the flat column `contact.email` was
+ * `/contact/email`, which names the nested field, and a pointer built from an
+ * UNESCAPED key gives a column literally named `tags[]` the pointer `/tags[]`,
+ * which names the array.
+ */
+export function splitFieldPath(path) {
+  const segments = []
+  let key = ''
+  let segment = ''
+  let arrays = 0
+  const endSegment = () => {
+    segments.push({ key, arrays, segment })
+    key = ''
+    segment = ''
+    arrays = 0
+  }
+  for (let index = 0; index < path.length; index += 1) {
+    const character = path[index]
+    if (character === '\\' && index + 1 < path.length) {
+      key += path[index + 1]
+      segment += character + path[index + 1]
+      index += 1
+      continue
+    }
+    if (character === '.') {
+      endSegment()
+      continue
+    }
+    if (character === '[' && path[index + 1] === ']') {
+      arrays += 1
+      segment += '[]'
+      index += 1
+      continue
+    }
+    key += character
+    segment += character
+  }
+  endSegment()
+  return segments
 }
 
 /** A number as a report prints it: at most four decimals, never negative zero. */

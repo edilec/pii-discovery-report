@@ -71,6 +71,12 @@ parser. The human summary goes to `stderr`, and `--json` silences it.
   field paths that do not exist.
 - `records` is an array of JSON objects. Nested objects and arrays are walked;
   an array level shows in the path as `[]`, so `orders[].email` is one field.
+- A key may legally contain the characters a path is composed from, so `\`, `.`,
+  `[` and `]` inside a key are **escaped with a backslash**. A flat column
+  literally named `contact.email` has the path `contact\.email` and the pointer
+  `/contact\.email`; a nested `contact` holding `email` has the path
+  `contact.email` and the pointer `/contact/email`. They are two fields, and
+  without the escaping they were one entry with one merged match rate.
 - A field path segment must print exactly as it is stored. A key containing a
   control character, a bidi mark or an irregular run of whitespace is counted as
   unexamined rather than printed wrong, because `a<U+0001>b` and `a b` print the
@@ -92,7 +98,10 @@ Every key is optional except `schemaVersion`, and **an unknown key is refused**
 rather than ignored: a one-character typo in a limit name must not turn a real
 failure into a green run.
 
-`acknowledged` lists field paths the operator has declared to hold personal data.
+`acknowledged` lists field paths the operator has declared to hold personal data,
+written in the composed form above -- acknowledging the flat column
+`contact.email` is the JSON string `"contact\\.email"`, and `"contact.email"`
+acknowledges the nested field.
 That declaration settles the question in the direction of **presence** and never
 in the direction of absence: an acknowledged field is reported as personal data
 at `info` severity, and it still raises every finding about a value this run
