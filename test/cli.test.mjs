@@ -9,10 +9,11 @@
  */
 
 import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import test from 'node:test'
 
-import { EXAMPLES, runCli, withTempDir, writeJson, writeText } from './helpers.mjs'
+import { EXAMPLES, ROOT, runCli, withTempDir, writeJson, writeText } from './helpers.mjs'
 
 const CLEAN = join(EXAMPLES, 'clean', 'dataset.json')
 const SEEDED = join(EXAMPLES, 'seeded', 'dataset.json')
@@ -35,6 +36,43 @@ test('the help states the three exit codes and the two shapes of exit 2', async 
   assert.ok(stderr.includes('stdout stays EMPTY'))
   assert.ok(stderr.includes('incomplete'))
   assert.ok(stderr.includes('writes no file'))
+})
+
+test('exit 0 with every field acknowledged, exactly as both documents describe it', async () => {
+  // The defect this pins was in the prose, not the code. The exit-code table
+  // said 0 meant "none reached the configured confidence" and the help said
+  // "no field reached the configured confidence"; both are false for every run
+  // whose fields are acknowledged, which is the run below.
+  await withTempDir(async (directory) => {
+    const config = await writeJson(directory, 'acknowledged.json', {
+      schemaVersion: '1',
+      acknowledged: [
+        'contact.email', 'contact.phone', 'date_of_birth', 'full_name',
+        'government_id', 'last_seen_ip', 'legacy_ref', 'payment.card_number',
+      ],
+    })
+    const result = await runCli([
+      '--dataset', join(EXAMPLES, 'seeded', 'dataset.json'), '--config', config, '--json',
+    ])
+    assert.equal(result.code, 0)
+    const report = JSON.parse(result.stdout)
+    assert.equal(report.status, 'pass')
+    assert.equal(report.summary.personalData, 8)
+    assert.equal(report.summary.errors, 0)
+    const high = report.fields.filter((entry) => entry.confidence === 'high')
+    assert.equal(high.length, 6)
+    for (const entry of high) assert.equal(entry.classification, 'personal-data')
+  })
+
+  // And both documents now say so where a reader looks for it.
+  const help = (await runCli(['--help'])).stderr
+  const readme = await readFile(join(ROOT, 'README.md'), 'utf8')
+  const helpExitZero = help.slice(help.indexOf('  0  '), help.indexOf('  1  '))
+  const readmeExitZero = readme.slice(readme.indexOf('| `0` |'), readme.indexOf('| `1` |'))
+  assert.match(helpExitZero, /UNACKNOWLEDGED field reached the/u)
+  assert.match(helpExitZero, /still\n     reported as personal data, at info severity/u)
+  assert.match(readmeExitZero, /does not\s+\*\*acknowledge\*\* reached the configured confidence/u)
+  assert.match(readmeExitZero, /still reported as personal\s+data, at `info` severity/u)
 })
 
 test('an unknown option is a configuration error: empty stdout, message on stderr, exit 2', async () => {

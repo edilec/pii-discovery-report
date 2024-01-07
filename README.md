@@ -241,7 +241,7 @@ it: an open category is not an open detection.
 
 | Code | Meaning |
 | ---: | --- |
-| `0` | every field was examined in full and none reached the configured confidence |
+| `0` | every field was examined in full, and no field that the configuration does not **acknowledge** reached the configured confidence. An acknowledged field is still reported as personal data, at `info` severity, and a run can exit 0 with fields classified `personal-data` at high confidence |
 | `1` | the run completed and at least one unacknowledged field looks like personal data |
 | `2` | invalid configuration, or evidence the run could not obtain |
 

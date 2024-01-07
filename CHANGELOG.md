@@ -7,6 +7,13 @@ public surface: renaming one is a breaking change and is recorded as such.
 
 ### Fixed
 
+- The exit-code table in the README and the exit-code section of `--help` both
+  said exit 0 meant no field reached the configured confidence. That is false for
+  every run whose fields are acknowledged: `personal-data-acknowledged` is `info`
+  and outside the unsettled set, so a run exits 0 with fields classified
+  `personal-data` at high confidence. The behaviour was always the intended one;
+  both sentences now say so, and a CLI test drives the run they describe.
+
 - A field path is now composed by ESCAPING each key, and read back with a parser
   rather than by splitting on `.`. A flat column named `contact.email` and a
   nested `contact` holding `email` composed to the same path, so they became one

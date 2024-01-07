@@ -46,8 +46,10 @@ Streams:
   stderr  the human summary and any diagnostics
 
 Exit codes:
-  0  every field was examined in full and no field reached the configured
-     confidence
+  0  every field was examined in full and no UNACKNOWLEDGED field reached the
+     configured confidence. A field the configuration acknowledges is still
+     reported as personal data, at info severity, so a run can exit 0 with
+     fields classified personal-data at high confidence
   1  the run completed and at least one field that is not acknowledged looks
      like personal data
   2  invalid configuration, or evidence the run could not obtain. A dataset that
