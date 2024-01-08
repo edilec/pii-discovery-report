@@ -12,12 +12,12 @@
         "phone": "+44 20 7946 0958"
       },
       "date_of_birth": "1984-03-11",
-      "government_id": "987-65-4320",
+      "government_id": "987-00-4320",
       "payment": {
         "card_number": "4111 1111 1111 1111"
       },
       "last_seen_ip": "203.0.113.42",
-      "legacy_ref": "412-90-7731",
+      "legacy_ref": "412-00-7731",
       "product_name": "Hex Bolt M8",
       "sku": "4901234512345",
       "unit_price": 4.5,
@@ -39,12 +39,12 @@
         "phone": "+1 (415) 555-0143"
       },
       "date_of_birth": "1991-07-02",
-      "government_id": "998-01-7734",
+      "government_id": "998-00-7734",
       "payment": {
         "card_number": "5555 5555 5555 4444"
       },
       "last_seen_ip": "198.51.100.7",
-      "legacy_ref": "508-21-4460",
+      "legacy_ref": "508-00-4460",
       "product_name": "Cable Gland 20mm",
       "sku": "5012345123456",
       "unit_price": 5.75,
@@ -66,12 +66,12 @@
         "phone": "(415) 555-0181"
       },
       "date_of_birth": "1978-12-24",
-      "government_id": "955-42-0018",
+      "government_id": "955-00-0018",
       "payment": {
         "card_number": "4111-1111-1111-1111"
       },
       "last_seen_ip": "203.0.113.19",
-      "legacy_ref": "377-64-9902",
+      "legacy_ref": "377-00-9902",
       "product_name": "Junction Box 4W",
       "sku": "6023456234567",
       "unit_price": 7.0,
@@ -90,15 +90,15 @@
       "full_name": "Tomas Reyes",
       "contact": {
         "email": "t.reyes@example.test",
-        "phone": "+44 20 7946 1101"
+        "phone": "+44 20 7946 0611"
       },
       "date_of_birth": "2001-01-30",
-      "government_id": "971-33-8890",
+      "government_id": "971-00-8890",
       "payment": {
         "card_number": "5105 1051 0510 5100"
       },
       "last_seen_ip": "198.51.100.203",
-      "legacy_ref": "291-08-5513",
+      "legacy_ref": "291-00-5513",
       "product_name": "Din Rail 35mm",
       "sku": "7034567345678",
       "unit_price": 8.25,
@@ -120,12 +120,12 @@
         "phone": "+1 (415) 555-0172"
       },
       "date_of_birth": "1966-09-08",
-      "government_id": "902-77-1245",
+      "government_id": "902-00-1245",
       "payment": {
         "card_number": "4111 1111 1111 1111"
       },
       "last_seen_ip": "203.0.113.88",
-      "legacy_ref": "640-77-1284",
+      "legacy_ref": "640-00-1284",
       "product_name": "Ferrule Kit 12",
       "sku": "8045678456789",
       "unit_price": 9.5,
@@ -147,12 +147,12 @@
         "phone": "+44 20 7946 0322"
       },
       "date_of_birth": "1995-05-17",
-      "government_id": "989-14-6603",
+      "government_id": "989-00-6603",
       "payment": {
         "card_number": "5555 5555 5555 4444"
       },
       "last_seen_ip": "198.51.100.31",
-      "legacy_ref": "153-92-3376",
+      "legacy_ref": "153-00-3376",
       "product_name": "Wago Clip 221",
       "sku": "9056789567890",
       "unit_price": 10.75,
@@ -174,12 +174,12 @@
         "phone": "(415) 555-0199"
       },
       "date_of_birth": "1988-11-03",
-      "government_id": "966-28-3371",
+      "government_id": "966-00-3371",
       "payment": {
         "card_number": "4012 8888 8888 1881"
       },
       "last_seen_ip": "203.0.113.5",
-      "legacy_ref": "486-30-8827",
+      "legacy_ref": "486-00-8827",
       "product_name": "Trunking 50x50",
       "sku": "1067890678901",
       "unit_price": 12.0,
@@ -201,12 +201,12 @@
         "phone": "+1 (415) 555-0104"
       },
       "date_of_birth": "1973-04-26",
-      "government_id": "944-05-9917",
+      "government_id": "944-00-9917",
       "payment": {
         "card_number": "5105 1051 0510 5100"
       },
       "last_seen_ip": "198.51.100.164",
-      "legacy_ref": "725-15-6091",
+      "legacy_ref": "725-00-6091",
       "product_name": "Conduit Bend 25",
       "sku": "2078901789012",
       "unit_price": 13.25,
@@ -228,12 +228,12 @@
         "phone": "+44 20 7946 0777"
       },
       "date_of_birth": "1999-08-14",
-      "government_id": "977-60-2248",
+      "government_id": "977-00-2248",
       "payment": {
         "card_number": "4111 1111 1111 1111"
       },
       "last_seen_ip": "203.0.113.201",
-      "legacy_ref": "394-58-2213",
+      "legacy_ref": "394-00-2213",
       "product_name": "Earth Bar 12W",
       "sku": "3089012890123",
       "unit_price": 14.5,
@@ -255,12 +255,12 @@
         "phone": "(415) 555-0156"
       },
       "date_of_birth": "1982-02-09",
-      "government_id": "931-18-7705",
+      "government_id": "931-00-7705",
       "payment": {
         "card_number": "5555 5555 5555 4444"
       },
       "last_seen_ip": "198.51.100.99",
-      "legacy_ref": "861-04-7735",
+      "legacy_ref": "861-00-7735",
       "product_name": "Gland Nut M20",
       "sku": "4090123901234",
       "unit_price": 15.75,
@@ -282,12 +282,12 @@
         "phone": "+1 (415) 555-0128"
       },
       "date_of_birth": "1969-06-21",
-      "government_id": "992-49-3382",
+      "government_id": "992-00-3382",
       "payment": {
         "card_number": "4012 8888 8888 1881"
       },
       "last_seen_ip": "203.0.113.117",
-      "legacy_ref": "247-69-1508",
+      "legacy_ref": "247-00-1508",
       "product_name": "Cable Tie 200mm",
       "sku": "5001234012346",
       "unit_price": 17.0,
@@ -309,12 +309,12 @@
         "phone": "+44 20 7946 0455"
       },
       "date_of_birth": "1993-10-05",
-      "government_id": "908-36-5514",
+      "government_id": "908-00-5514",
       "payment": {
         "card_number": "4111-1111-1111-1111"
       },
       "last_seen_ip": "198.51.100.12",
-      "legacy_ref": "569-83-4462",
+      "legacy_ref": "569-00-4462",
       "product_name": "Back Box 35mm",
       "sku": "6012345123456",
       "unit_price": 18.25,

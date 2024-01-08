@@ -65,7 +65,7 @@ test('an info finding alone is exit 0, and the field is still reported as person
 })
 
 test('a warning that leaves a question open is exit 2, not exit 0', async () => {
-  const { result, report } = await runOn([{ ref: '987-65-4320' }, { ref: 'a' }, { ref: 'b' }, { ref: 'c' }])
+  const { result, report } = await runOn([{ ref: '987-00-4320' }, { ref: 'a' }, { ref: 'b' }, { ref: 'c' }])
   assert.deepEqual(report.findings.map((finding) => finding.ruleId), ['classification-uncertain'])
   assert.equal(report.findings[0].severity, 'warning')
   assert.equal(report.status, 'incomplete')

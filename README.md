@@ -298,17 +298,18 @@ personal data and 12 fields without, at the default confidence floor:
 | non-personal fields drawing nothing at all | 11 of 12 |
 
 The one false positive is named rather than rounded away. `legacy_ref` holds
-internal references of the form `412-90-7731`, which is exactly the shape a
+internal references of the form `412-00-7731`, which is exactly the shape a
 government identifier takes; nothing in the value distinguishes them, and this
 tool does not guess. That is the class of error this design accepts, and
 `test/acceptance.test.mjs` re-derives every number above from the shipped corpus.
 
 Every value in that corpus is invented and drawn from ranges reserved for
-documentation: `example.test` addresses, the Ofcom and NANP drama telephone
-ranges, published card test numbers that belong to nobody, identifiers whose
-leading group is one the issuing authority never assigns as a social-security
-number, and the TEST-NET blocks of RFC 5737. No record in this repository
-describes a real person.
+documentation: `example.test` addresses, the NANP 555-0100 to 555-0199 and Ofcom
+020 7946 0000 to 0999 drama telephone blocks, published card test numbers that
+belong to nobody, identifiers whose middle group is `00` and so is issued by
+neither scheme that shape belongs to, and the TEST-NET blocks of RFC 5737. No
+record in this repository describes a real person, and
+`test/acceptance.test.mjs` checks every one of those ranges against the corpus.
 
 ## Non-goals
 

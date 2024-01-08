@@ -82,7 +82,7 @@ test('a run whose only finding is a warning still exits 2, because the question 
     const path = await writeJson(directory, 'dataset.json', {
       schemaVersion: '1',
       source: 'tabular-export',
-      records: [{ ref: '987-65-4320' }, { ref: 'AB-1' }, { ref: 'AB-2' }, { ref: 'AB-3' }],
+      records: [{ ref: '987-00-4320' }, { ref: 'AB-1' }, { ref: 'AB-2' }, { ref: 'AB-3' }],
     })
     const result = await runCli(['--dataset', path, '--json'])
     const report = JSON.parse(result.stdout)
@@ -204,7 +204,7 @@ test('a key whose value is an empty object contributes no field, and nothing is 
 })
 
 test('one path holding a string in one record and a number in another examines both', () => {
-  const report = reportFor([{ ref: '987-65-4320' }, { ref: 9876543 }])
+  const report = reportFor([{ ref: '987-00-4320' }, { ref: 9876543 }])
   const entry = fieldNamed(report, 'ref')
   assert.equal(entry.values.examined, 2)
   assert.equal(entry.candidates[0].recogniser, 'government-id')

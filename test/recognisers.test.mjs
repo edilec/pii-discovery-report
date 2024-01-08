@@ -169,12 +169,12 @@ test('payment-card: the issuer table is what the measured chance rate rests on',
 })
 
 test('government-id: only the grouped shape, and it collides with internal references by design', () => {
-  assert.equal(matches('government-id', '987-65-4320'), true)
+  assert.equal(matches('government-id', '987-00-4320'), true)
   assert.equal(matches('government-id', '987654320'), false)
   assert.equal(matches('government-id', '1984-03-11'), false)
   // The known false-positive class, stated rather than wished away: an internal
   // reference in the same shape is indistinguishable from an identifier.
-  assert.equal(matches('government-id', '412-90-7731'), true)
+  assert.equal(matches('government-id', '412-00-7731'), true)
 })
 
 test('network-address: an octet out of range or padded is not an address', () => {

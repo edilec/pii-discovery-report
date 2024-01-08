@@ -91,10 +91,24 @@ exit code and not a string.
 
 ## Fixtures
 
-Every value in `examples/` is invented. The addresses use the reserved
-`example.test` domain, the telephone numbers come from the Ofcom and NANP drama
-ranges, the card numbers are the published test values that pass Luhn and belong
-to nobody, the `government_id` values use a leading group the issuing authority
-never assigns as a social-security number, and the addresses in `last_seen_ip`
-are the TEST-NET blocks RFC 5737 reserves for documentation. No record here
-describes a real person, and none was copied from anywhere.
+Every value in `examples/` is invented, and every claim in this section is
+checked against the corpus by `test/acceptance.test.mjs` rather than asserted
+here. That test exists because one telephone number was not what this paragraph
+said it was: `+44 20 7946 1101` sat outside the Ofcom London drama block, which
+is 020 7946 **0**000 to 0999, in a range that can be assigned to a subscriber.
+
+- Addresses use the reserved `example.test` domain.
+- Telephone numbers come from the NANP 555-0100 to 555-0199 block and Ofcom's
+  020 7946 0000 to 0999 block.
+- Card numbers are the values the networks publish for testing, which pass Luhn
+  and belong to nobody.
+- Every `government_id` and every `legacy_ref` has `00` as its middle group.
+  That group is issued by neither scheme the shape belongs to -- a
+  social-security number has no `00` group, and an ITIN's middle pair is 50-65,
+  70-88, 90-92 or 94-99 -- so no value here can be an identifier anybody holds.
+  The shape is unchanged, which is the point: `legacy_ref` is an internal
+  reference that collides with `government-id` on shape alone, and that
+  collision is the one false positive the README measures.
+- `last_seen_ip` uses the TEST-NET blocks RFC 5737 reserves for documentation.
+
+No record here describes a real person, and none was copied from anywhere.

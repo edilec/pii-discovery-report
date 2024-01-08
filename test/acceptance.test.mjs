@@ -8,9 +8,10 @@
  * that the numbers below can be re-derived by anyone. Every value in it is
  * invented and drawn from a range reserved for documentation: `example.test`
  * addresses, the Ofcom and NANP drama telephone ranges, published card test
- * numbers that belong to nobody, identifiers whose leading group is one the
- * issuing authority never assigns as a social-security number, and the TEST-NET
- * blocks of RFC 5737.
+ * numbers that belong to nobody, identifiers whose middle group is one no
+ * issuing scheme uses, and the TEST-NET blocks of RFC 5737. The test below
+ * checks every one of those claims against the corpus rather than repeating
+ * them.
  *
  * The labels live HERE and nowhere in the tool's input. The tool is never told
  * which fields hold personal data; it is measured against the labels
@@ -172,6 +173,48 @@ test('the confidence floor is where the trade-off sits, and moving it is visible
   assert.equal(result.code, 2)
 })
 
+test('every value in the corpus comes from a range that cannot belong to anybody', async () => {
+  // The design notes make a claim about where these values come from, and a
+  // claim about a fixture is worth what checks it. One telephone number,
+  // `+44 20 7946 1101`, sat OUTSIDE the reserved block the notes name -- the
+  // Ofcom London drama range is 020 7946 0000 to 0999 -- in a block that can be
+  // assigned to a real subscriber.
+  const document = JSON.parse(await readFile(SEEDED, 'utf8'))
+  const records = document.records
+  const values = (pick) => records.map(pick).filter((value) => value !== undefined)
+
+  for (const phone of values((record) => record.contact?.phone)) {
+    const digits = phone.replace(/[^0-9]/gu, '')
+    // NANP 555-0100 to 555-0199, with or without the country code.
+    const nanp = /^1?[0-9]{3}55501[0-9]{2}$/u.test(digits)
+    // Ofcom's London drama block, 020 7946 0000 to 0999.
+    const ofcom = /^(?:44)?2079460[0-9]{3}$/u.test(digits)
+    assert.ok(nanp || ofcom, `${phone} is outside the NANP 555-01XX and Ofcom 020 7946 0XXX drama blocks`)
+  }
+
+  // Never issued in either of the issuer's schemes: a social-security number
+  // has no 00 group, and an ITIN's middle pair is 50-65, 70-88, 90-92 or 94-99.
+  // It keeps the shape the recogniser tests, which is what the corpus measures.
+  for (const identifier of [...values((record) => record.government_id), ...values((record) => record.legacy_ref)]) {
+    assert.match(identifier, /^[0-9]{3}-00-[0-9]{4}$/u)
+  }
+
+  for (const address of values((record) => record.contact?.email)) {
+    assert.match(address, /@(?:[a-z0-9-]+\.)*example\.test$/u)
+  }
+  // RFC 5737 TEST-NET-1, TEST-NET-2 and TEST-NET-3.
+  for (const address of values((record) => record.last_seen_ip)) {
+    assert.match(address, /^(?:192\.0\.2|198\.51\.100|203\.0\.113)\.[0-9]{1,3}$/u)
+  }
+  // The numbers the card networks publish for testing.
+  const PUBLISHED = new Set([
+    '4111111111111111', '4012888888881881', '5555555555554444', '5105105105105100',
+  ])
+  for (const card of values((record) => record.payment?.card_number)) {
+    assert.ok(PUBLISHED.has(card.replace(/[^0-9]/gu, '')), card)
+  }
+})
+
 test('no value from the dataset survives into the report, and the masks that replace them are pinned', async () => {
   const { report, result } = await seededReport()
   const rendered = result.stdout
@@ -235,7 +278,7 @@ async function runCliOnRecords() {
   const { withTempDir, writeJson } = await import('./helpers.mjs')
   return withTempDir(async (directory) => {
     const records = [
-      { ref: '987-65-4320' },
+      { ref: '987-00-4320' },
       { ref: 'AB-1234' },
       { ref: 'AB-1235' },
       { ref: 'AB-1236' },

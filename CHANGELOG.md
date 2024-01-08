@@ -7,6 +7,15 @@ public surface: renaming one is a breaking change and is recorded as such.
 
 ### Fixed
 
+- The seeded corpus no longer carries a telephone number outside the reserved
+  drama block its design notes name: `+44 20 7946 1101` is above Ofcom's London
+  block of 020 7946 0000 to 0999 and could be assigned to a subscriber. Every
+  `government_id` and `legacy_ref` now has `00` as its middle group, which
+  neither the social-security nor the ITIN scheme issues, so no value in the
+  corpus can be an identifier anybody holds; the shapes, and the one measured
+  false positive that rests on them, are unchanged. `test/acceptance.test.mjs`
+  now checks every range claim against the corpus.
+
 - The exit-code table in the README and the exit-code section of `--help` both
   said exit 0 meant no field reached the configured confidence. That is false for
   every run whose fields are acknowledged: `personal-data-acknowledged` is `info`
