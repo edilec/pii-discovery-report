@@ -49,7 +49,9 @@ import {
 } from './config.mjs'
 import {
   DATASET_SCHEMA_VERSION,
+  MAX_NODES,
   SUPPORTED_SOURCES,
+  countNodes,
   observeRecords,
   pointerForPath,
   readDataset,
@@ -552,6 +554,20 @@ export async function discoverPersonalData({ dataset: datasetPath, config: confi
     )], file, config)
   }
 
+  // Before `JSON.parse`, not after: the parse is the work this bounds. A
+  // document of eight million empty arrays is 16 MiB of text and 1.31 GB of
+  // memory, and every other limit here fires only once the structure exists.
+  const nodes = countNodes(read.text, MAX_NODES)
+  if (nodes.exceeded) {
+    return unreadableReport([makeFinding(
+      'node-limit-exceeded',
+      msg`The document opens more than the ${String(MAX_NODES)} objects and arrays this run reads, so it
+          was not parsed and nothing in it was examined.`,
+      at(file, null),
+      { suggestion: 'Split the export, or flatten the structures inside it.' },
+    )], file, config)
+  }
+
   let document
   try {
     document = JSON.parse(read.text)
@@ -659,6 +675,7 @@ export const CATALOG = Object.freeze({
   defaultLimits: DEFAULT_LIMITS,
   limitCeilings: LIMIT_CEILINGS,
   maxCells: MAX_CELLS,
+  maxNodes: MAX_NODES,
   maxConfigBytes: MAX_CONFIG_BYTES,
   maxAcknowledged: MAX_ACKNOWLEDGED,
   maxMaskedExamples: MAX_MASKED_EXAMPLES,

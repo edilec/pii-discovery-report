@@ -8,7 +8,7 @@
  */
 
 import assert from 'node:assert/strict'
-import { stat } from 'node:fs/promises'
+import { readFile, stat } from 'node:fs/promises'
 import test from 'node:test'
 
 import {
@@ -20,8 +20,10 @@ import {
   MAX_FIELD_PATH_LENGTH,
   MAX_CELLS,
   MAX_CONFIG_BYTES,
+  MAX_NODES,
   MAX_MASKED_EXAMPLES,
   MAX_PATH_LENGTH,
+  countNodes,
   maskValue,
   validateConfig,
 } from '../src/index.mjs'
@@ -126,6 +128,50 @@ test('maxDatasetBytes: a file of exactly the limit is read, one byte more is ref
     const report = JSON.parse(overLimit.stdout)
     assert.deepEqual(report.findings.map((finding) => finding.ruleId), ['dataset-too-large'])
     assert.equal(report.status, 'incomplete')
+  })
+})
+
+test('countNodes counts what the parse would build, and not a bracket inside a string', () => {
+  // The scan is what stands between a legal 16 MiB document and the heap, so
+  // the two ways it could be wrong are pinned: counting a bracket that is text,
+  // and missing one that is a node.
+  assert.deepEqual(countNodes('{"a": [1, 2]}', 10), { nodes: 2, exceeded: false })
+  assert.deepEqual(countNodes('{"a": "[[[[["}', 10), { nodes: 1, exceeded: false })
+  assert.deepEqual(countNodes('{"a": "\\"[["}', 10), { nodes: 1, exceeded: false })
+  assert.deepEqual(countNodes('[[[]]]', 10), { nodes: 3, exceeded: false })
+  // It stops at the limit rather than counting a document out.
+  assert.deepEqual(countNodes('[[[[[[', 3), { nodes: 4, exceeded: true })
+})
+
+test('maxNodes: a document of exactly the cap is read, one node more is refused before it is parsed', async () => {
+  // The defect this pins: `maxDatasetBytes` bounds the text and
+  // `maxRecords * maxFields` bounds the traversal, and neither bounds the
+  // PARSE. A file of 16777216 bytes -- legal at the documented ceiling -- holds
+  // eight million empty arrays, and building them took 1.31 GB of memory before
+  // the depth limit refused a single subtree.
+  await withTempDir(async (directory) => {
+    const document = (nodes) =>
+      `{"schemaVersion":"1","source":"tabular-export","records":[{"a":[${Array.from({ length: nodes - 4 }, () => '[]').join(',')}]}]}`
+    // 4 nodes are the envelope: the document, the records array, the record and
+    // the array in `a`.
+    const atLimit = await writeText(directory, 'at.json', document(MAX_NODES))
+    assert.equal(countNodes(await readFile(atLimit, 'utf8'), MAX_NODES).exceeded, false)
+
+    const past = await writeText(directory, 'past.json', document(MAX_NODES + 1))
+    // The byte bound is cheaper and fires first, so it is raised to its ceiling
+    // here: this run is about the node bound.
+    const config = await writeJson(directory, 'config.json', {
+      schemaVersion: '1',
+      limits: { maxDatasetBytes: LIMIT_CEILINGS.maxDatasetBytes },
+    })
+    const refused = await runCli(['--dataset', past, '--config', config, '--json'])
+    assert.equal(refused.code, 2)
+    const report = JSON.parse(refused.stdout)
+    assert.equal(report.status, 'incomplete')
+    assert.deepEqual(report.findings.map((finding) => finding.ruleId), ['node-limit-exceeded'])
+    assert.equal(report.findings[0].severity, 'error')
+    assert.match(report.findings[0].message, /was not parsed and nothing in it was examined/u)
+    assert.equal(report.summary.checked, 0)
   })
 })
 

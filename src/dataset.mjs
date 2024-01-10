@@ -79,6 +79,61 @@ export async function readTextBounded(file, maxBytes) {
   return { status: 'ok', reason: null, text }
 }
 
+/**
+ * The most JSON nodes -- objects and arrays -- one document may build.
+ *
+ * `maxDatasetBytes` bounds the TEXT and `maxRecords * maxFields` bounds the
+ * TRAVERSAL. Neither bounds the PARSE, and the parse is where the memory goes:
+ * every `[` or `{` in the document becomes an object on the heap, and the
+ * cheapest one costs two bytes of text and about 160 bytes of memory. A file of
+ * 16777216 bytes -- the ceiling `maxDatasetBytes` may be raised to, and so a
+ * document this tool calls legal -- is eight million of them, and it drove peak
+ * resident memory to 1.31 GB before the depth limit had a chance to refuse a
+ * single subtree, because `JSON.parse` had already built the whole structure.
+ *
+ * So the nodes are counted in the TEXT, before it is parsed, and a document
+ * over the limit is never handed to `JSON.parse` at all. The count is an upper
+ * bound on what the parse would allocate and it needs no allocation itself.
+ */
+export const MAX_NODES = 2000000
+
+const QUOTE = 0x22
+const BACKSLASH = 0x5c
+const OPEN_BRACE = 0x7b
+const OPEN_BRACKET = 0x5b
+
+/**
+ * Count the objects and arrays a document would build, without building them.
+ *
+ * A `[` inside a string literal is text, not a node, so the scan tracks string
+ * state and the backslash escape -- counting every bracket would refuse a
+ * document of legal prose. The scan stops as soon as the limit is passed, so
+ * the work it does is bounded too.
+ */
+export function countNodes(text, limit) {
+  let nodes = 0
+  let inString = false
+  let escaped = false
+  for (let index = 0; index < text.length; index += 1) {
+    const code = text.charCodeAt(index)
+    if (inString) {
+      if (escaped) escaped = false
+      else if (code === BACKSLASH) escaped = true
+      else if (code === QUOTE) inString = false
+      continue
+    }
+    if (code === QUOTE) {
+      inString = true
+      continue
+    }
+    if (code === OPEN_BRACE || code === OPEN_BRACKET) {
+      nodes += 1
+      if (nodes > limit) return { nodes, exceeded: true }
+    }
+  }
+  return { nodes, exceeded: false }
+}
+
 function isRecordObject(value) {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }

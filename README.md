@@ -225,6 +225,7 @@ sets the floor at which a candidate becomes a verdict.
 | `field-limit-exceeded` | error | more distinct field paths than `maxFields`, so some values were not attributed |
 | `field-path-unusable` | error | a key that prints as nothing, is over the path length, or would not print as it is stored |
 | `no-fields-checked` | error | nothing was examined, so the run establishes nothing |
+| `node-limit-exceeded` | error | the document opens more objects and arrays than one run builds, counted in the text before it is parsed |
 | `personal-data-acknowledged` | info | a field the configuration acknowledges |
 | `personal-data-detected` | error | a field reached the floor and is not acknowledged |
 | `record-invalid` | error | an entry in `records` is not a JSON object |
@@ -269,6 +270,15 @@ though it were whole; and `maxRecords * maxFields` is
 checked against a cap of 2000000 field observations while the configuration is
 validated, before a file is opened.
 
+The **parse** is bounded too, and separately, because none of the above bounds
+it. Every `[` or `{` in the document becomes an object on the heap and the
+cheapest one costs two bytes of text, so a file at the 16777216-byte ceiling --
+a document this tool calls legal -- is eight million of them, and `JSON.parse`
+had built all of them before the depth limit could refuse a single subtree: peak
+resident memory 1.31 GB. The objects and arrays are now counted in the TEXT,
+before it is parsed, and a document over 2000000 of them is never parsed at
+all.
+
 | Limit | Default | Ceiling |
 | --- | ---: | ---: |
 | `maxDatasetBytes` | 4194304 | 16777216 |
@@ -278,7 +288,8 @@ validated, before a file is opened.
 | `maxDepth` | 8 | 32 |
 
 Fixed, and not configurable: the configuration document itself is capped at 65536
-bytes, `acknowledged` at 1024 entries, a field path segment at 128 characters, an
+bytes, the document may open at most 2000000 objects and arrays, `acknowledged`
+is capped at 1024 entries, a field path segment at 128 characters, an
 acknowledged path at 512, and a field entry keeps at most 3 masked examples.
 
 Exceeding any limit is an `incomplete` result with a finding naming the limit.
@@ -310,6 +321,22 @@ belong to nobody, identifiers whose middle group is `00` and so is issued by
 neither scheme that shape belongs to, and the TEST-NET blocks of RFC 5737. No
 record in this repository describes a real person, and
 `test/acceptance.test.mjs` checks every one of those ranges against the corpus.
+
+### At the documented maximum
+
+Measured on one machine under heavy load, with `/usr/bin/time -l`, so the wall
+clock says more about the load than about the tool; the CPU time and the peak
+resident set are the figures worth reading.
+
+| Input, all bounds at their documented ceiling | Peak RSS | CPU | Exit |
+| --- | ---: | ---: | ---: |
+| 200000 records x 10 fields, 2000000 values examined, 15.4 MiB | 155 MB | 2.4 s | 0 |
+| 4194274 values in one array, 16 MiB | 194 MB | 2.4 s | 0 |
+| 2000000 objects and arrays, the node cap exactly, 5.7 MiB | 364 MB | 0.4 s | 2 |
+| 8388000 nested arrays, 16 MiB, refused before the parse | 88 MB | 0.1 s | 2 |
+
+The last row is the one that matters: before the node cap it was **1.31 GB**,
+because every other limit fires after `JSON.parse` has built the structure.
 
 ## Non-goals
 

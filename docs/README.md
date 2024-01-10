@@ -89,6 +89,26 @@ allowed to take a path apart. Both are exercised by `test/paths.test.mjs` throug
 the report and through the CLI exit code, because the failure this prevents is an
 exit code and not a string.
 
+## Why the parse has its own bound
+
+The limits looked complete and were not. `maxDatasetBytes` bounds the text,
+`maxRecords`, `maxFields` and `maxDepth` bound the traversal, and
+`maxRecords * maxFields` bounds the observations -- and every one of them is
+checked either before the file is read or during the walk. The parse sits
+between those two, and nothing bounded it.
+
+`[` is one byte of text and about 160 bytes of memory. A file of 16777216 bytes,
+which is the ceiling `maxDatasetBytes` may legally be raised to, holds eight
+million of them, and `JSON.parse` builds every one before `observeRecords` sees
+a single subtree to refuse. Measured: 1.31 GB peak resident memory on a document
+this tool calls legal, ending at exit 2 with `record-too-deep` -- the right
+verdict, reached the expensive way.
+
+So `countNodes` scans the text first and refuses a document that opens more than
+2000000 objects and arrays. It allocates nothing, it stops as soon as the limit
+is passed, and it tracks string state because a `[` inside a string is prose.
+The bound is on the WORK, not on the output.
+
 ## Fixtures
 
 Every value in `examples/` is invented, and every claim in this section is

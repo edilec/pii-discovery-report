@@ -5,6 +5,16 @@ public surface: renaming one is a breaking change and is recorded as such.
 
 ## Unreleased
 
+### Added
+
+- `node-limit-exceeded`, an error rule in the unsettled set: the objects and
+  arrays a document opens are counted in the text, before `JSON.parse` is
+  called, and a document over 2000000 of them is refused unparsed. A file at the
+  16777216-byte ceiling of `maxDatasetBytes` -- legal by every declared bound --
+  can hold eight million empty arrays, and building them drove peak resident
+  memory to 1.31 GB before the depth limit refused a single subtree. The same
+  document now costs 88 MB, and the worst input the cap allows costs 364 MB.
+
 ### Fixed
 
 - The seeded corpus no longer carries a telephone number outside the reserved
