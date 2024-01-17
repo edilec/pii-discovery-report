@@ -150,7 +150,11 @@ measured effect:
 | 15 | 710 of 10000 | 0.00710, from 0.1 |
 
 `test/recognisers.test.mjs` re-derives both counts from the table itself, so
-widening it changes the test and this section together. The cost is a card from
+widening it changes the test and this section together, and it builds a number
+at every length in every range and drives it through the recogniser -- three
+places decide a card number's length and a row promising one the shape refuses
+is a promise the tool cannot keep. The shortest number this tool reads is 13
+digits, so a 12-digit Maestro card is missed. The cost is a card from
 a network the table does not list, which is missed; the networks it lists are
 American Express, Diners Club, JCB, Visa, Maestro, Mastercard, UnionPay and
 Discover.

@@ -17,6 +17,12 @@ public surface: renaming one is a breaking change and is recorded as such.
 
 ### Fixed
 
+- The issuer table no longer declares a length the recogniser cannot reach. Four
+  Maestro ranges listed 12 digits while `CARD_SHAPE` and `luhnValid` both refuse
+  anything under 13, so the table promised what the code does not do. The rows
+  now start at 13, and a test builds a number at every length in every range and
+  drives it through the recogniser.
+
 - The seeded corpus no longer carries a telephone number outside the reserved
   drama block its design notes name: `+44 20 7946 1101` is above Ofcom's London
   block of 020 7946 0000 to 0999 and could be assigned to a subscriber. Every

@@ -196,10 +196,19 @@ export function luhnValid(digits) {
  * this file that rests on a fact outside the value, so the row it comes from is
  * named beside it.
  */
-const CARD_LENGTHS_12_TO_19 = Object.freeze([12, 13, 14, 15, 16, 17, 18, 19])
+/**
+ * Maestro issued numbers as short as twelve digits, and this list starts at
+ * thirteen on purpose: `CARD_SHAPE` and `luhnValid` both refuse a shorter run of
+ * digits, so a twelve-digit row here would be a length the table promises and
+ * the recogniser cannot reach. A table that says what the code does not do is
+ * the defect this catalog keeps finding, and the test below builds a number at
+ * every length in every row and drives it through the recogniser for exactly
+ * that reason. The cost is a twelve-digit Maestro card, which is missed.
+ */
+const CARD_LENGTHS_13_TO_19 = Object.freeze([13, 14, 15, 16, 17, 18, 19])
 const CARD_LENGTHS_16_TO_19 = Object.freeze([16, 17, 18, 19])
 
-const CARD_RANGES = Object.freeze([
+export const CARD_RANGES = Object.freeze([
   // American Express
   Object.freeze({ from: '34', to: '34', lengths: Object.freeze([15]) }),
   Object.freeze({ from: '37', to: '37', lengths: Object.freeze([15]) }),
@@ -213,10 +222,10 @@ const CARD_RANGES = Object.freeze([
   // Visa
   Object.freeze({ from: '4', to: '4', lengths: Object.freeze([13, 16, 19]) }),
   // Maestro
-  Object.freeze({ from: '50', to: '50', lengths: CARD_LENGTHS_12_TO_19 }),
-  Object.freeze({ from: '56', to: '58', lengths: CARD_LENGTHS_12_TO_19 }),
-  Object.freeze({ from: '639', to: '639', lengths: CARD_LENGTHS_12_TO_19 }),
-  Object.freeze({ from: '67', to: '67', lengths: CARD_LENGTHS_12_TO_19 }),
+  Object.freeze({ from: '50', to: '50', lengths: CARD_LENGTHS_13_TO_19 }),
+  Object.freeze({ from: '56', to: '58', lengths: CARD_LENGTHS_13_TO_19 }),
+  Object.freeze({ from: '639', to: '639', lengths: CARD_LENGTHS_13_TO_19 }),
+  Object.freeze({ from: '67', to: '67', lengths: CARD_LENGTHS_13_TO_19 }),
   // Mastercard
   Object.freeze({ from: '51', to: '55', lengths: Object.freeze([16]) }),
   Object.freeze({ from: '2221', to: '2720', lengths: Object.freeze([16]) }),

@@ -12,7 +12,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { RECOGNISERS, issuedRange, luhnValid, normaliseValue, recogniserById } from '../src/index.mjs'
+import { CARD_RANGES, RECOGNISERS, issuedRange, luhnValid, normaliseValue, recogniserById } from '../src/index.mjs'
 import { fieldNamed, reportFor } from './helpers.mjs'
 
 function matches(id, value) {
@@ -147,6 +147,40 @@ test('payment-card: every published network test number still matches', () => {
   ]) {
     assert.equal(matches('payment-card', value), true, value)
   }
+})
+
+test('payment-card: every length every issuer range declares is one the recogniser reaches', () => {
+  // The three places that decide a card number's length -- the range table,
+  // `CARD_SHAPE` and `luhnValid` -- have to agree, and they did not: four
+  // Maestro rows declared twelve digits while the other two refuse anything
+  // under thirteen, so the table promised a length no value could ever reach.
+  // The check digit here is computed independently of the tool.
+  const withCheckDigit = (body) => {
+    let sum = 0
+    let double = true
+    for (let index = body.length - 1; index >= 0; index -= 1) {
+      let value = body.charCodeAt(index) - 48
+      if (double) {
+        value *= 2
+        if (value > 9) value -= 9
+      }
+      sum += value
+      double = !double
+    }
+    return `${body}${(10 - (sum % 10)) % 10}`
+  }
+  let checked = 0
+  for (const range of CARD_RANGES) {
+    for (const prefix of new Set([range.from, range.to])) {
+      for (const length of range.lengths) {
+        const number = withCheckDigit(prefix + '0'.repeat(length - 1 - prefix.length))
+        assert.equal(number.length, length)
+        assert.equal(matches('payment-card', number), true, `${prefix} at ${length} digits`)
+        checked += 1
+      }
+    }
+  }
+  assert.equal(checked, 70)
 })
 
 test('payment-card: the issuer table is what the measured chance rate rests on', () => {
