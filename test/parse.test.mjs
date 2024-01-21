@@ -75,13 +75,41 @@ test('an unterminated document keeps its own wording', () => {
 })
 
 test('a wording the helper has never been taught still cannot leak', () => {
-  // The backstop does not depend on the branches above being right: across the
-  // measured corpus of V8 parse messages, a message with no quoted snippet
-  // carries no double quote at all, so a surviving double quote means a snippet
-  // survived whatever the branches concluded.
+  // This one is refused by the generic fallback: it matches neither the quoting
+  // shape nor the position shape, so no branch produces a detail at all. It is
+  // NOT what exercises the backstop -- a mutation sweep deleting the backstop
+  // left this assertion green, which is what sent the two cases below in.
   const invented = { message: 'Some future wording about "tok3n=s3cret-value" that nobody taught this helper' }
   assert.equal(parseFailureDetail(invented), UNPARSEABLE)
   assert.equal(parseFailureDetail(invented).includes('tok3n'), false)
+})
+
+test('the backstop catches a leak the branches above would have let through', () => {
+  // A future wording that carries the offending VALUE and then says where it
+  // is. The position branch recognises the offset, keeps everything up to it --
+  // and that span holds the document. The backstop is the only thing that
+  // notices, and it notices without knowing this wording: across the measured
+  // corpus of V8 parse messages, a message with no quoted snippet carries no
+  // double quote at all, because V8 quotes JSON punctuation with apostrophes.
+  const carriesTheValue = { message: 'Unexpected value "s3cret-value" in JSON at position 12' }
+  assert.equal(parseFailureDetail(carriesTheValue), UNPARSEABLE)
+  assert.equal(parseFailureDetail(carriesTheValue).includes('s3cret-value'), false)
+
+  // And the quoting branch, when the offending token is itself a double quote:
+  // the token is reported verbatim, so the detail carries one.
+  const quoteIsTheToken = { message: 'Unexpected token \'"\', "padding" is not valid JSON' }
+  assert.equal(parseFailureDetail(quoteIsTheToken), UNPARSEABLE)
+
+  // Both of those are refused for carrying a quote, not for being unrecognised:
+  // the same shapes without one keep their own wording.
+  assert.equal(
+    parseFailureDetail({ message: 'Unexpected value in JSON at position 12' }),
+    'Unexpected value in JSON at position 12',
+  )
+  assert.equal(
+    parseFailureDetail({ message: "Unexpected token 'z', \"abc\" is not valid JSON" }),
+    "unexpected token 'z' at the start of the document",
+  )
 })
 
 test('a non-error, a missing message and an unconvertible one are all described safely', () => {
