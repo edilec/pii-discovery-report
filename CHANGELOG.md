@@ -15,6 +15,17 @@ public surface: renaming one is a breaking change and is recorded as such.
   memory to 1.31 GB before the depth limit refused a single subtree. The same
   document now costs 88 MB, and the worst input the cap allows costs 364 MB.
 
+### Removed
+
+- `num`, a number formatter exported from `src/text.mjs`, tested, and called
+  from nowhere in `src` or `bin`. An unreferenced helper that looks like part of
+  the output boundary is worse than none: the next reader greps, finds it, and
+  stops looking. It also carried a defect waiting for whoever wired it up --
+  it guards its INPUT with `Number.isFinite` and then multiplies by 10000, so
+  any finite value above about 1.8e302 came back as `Infinity`, which
+  `JSON.stringify` writes as `null`. Every number in a report comes from `rate`
+  or from `String(...)` on a count.
+
 ### Fixed
 
 - The issuer table no longer declares a length the recogniser cannot reach. Four

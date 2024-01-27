@@ -188,14 +188,6 @@ export function splitFieldPath(path) {
   return segments
 }
 
-/** A number as a report prints it: at most four decimals, never negative zero. */
-export function num(value) {
-  if (!Number.isFinite(value)) return describeValue(value)
-  const rounded = Math.round(value * 10000) / 10000
-  if (rounded === 0 && value !== 0) return String(value)
-  return Object.is(rounded, -0) ? '0' : String(rounded)
-}
-
 /**
  * A rate as a report records it: a finite number, four decimals, never -0.
  *

@@ -13,6 +13,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
+import * as text from '../src/text.mjs'
 import {
   LINE_SEPARATORS,
   MAX_PATH_LENGTH,
@@ -20,7 +21,6 @@ import {
   isRenderableString,
   isUsableName,
   maskValue,
-  num,
   rate,
   renderReport,
   sanitize,
@@ -142,8 +142,10 @@ test('rounding a report number never turns something into nothing', () => {
   assert.equal(rate(1, 3), 0.3333)
   assert.equal(rate(0, 10), 0)
   assert.equal(rate(1, 0), 0)
-  assert.equal(num(0.00001), '0.00001')
-  assert.equal(num(0), '0')
-  assert.equal(num(-0), '0')
-  assert.equal(num(1.23456), '1.2346')
+  assert.equal(rate(0, 0), 0)
+  // Every number a report carries comes from `rate` or from `String(...)` on a
+  // count. There is no second number formatter: `num` used to live beside this
+  // one, exported and tested and called from nowhere, which is the shape a
+  // reader greps, finds, and stops looking at.
+  assert.equal(Object.keys(text).filter((name) => name === 'num').length, 0)
 })
