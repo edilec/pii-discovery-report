@@ -261,8 +261,37 @@ test('a field path of exactly the printable length is used, and one character mo
 })
 
 test('a mask of exactly the mask limit is whole, and one character more is marked as cut', () => {
-  assert.equal(maskValue('a'.repeat(MASK_LIMIT)), 'x'.repeat(MASK_LIMIT))
-  assert.equal(maskValue('a'.repeat(MASK_LIMIT + 1)), `${'x'.repeat(MASK_LIMIT)}...`)
+  // The literal 48 is the number the README documents. Reading MASK_LIMIT here
+  // instead made this test agree with whatever the constant said -- a sweep
+  // moved it to 49 and nothing failed.
+  assert.equal(MASK_LIMIT, 48)
+  assert.equal(maskValue('a'.repeat(48)), 'x'.repeat(48))
+  assert.equal(maskValue('a'.repeat(49)), `${'x'.repeat(48)}...`)
+})
+
+test('the documented confidence rates decide at the number the README prints', () => {
+  // The threshold tests below drive 9 of 10 and 8 of 10, which is 0.9 against
+  // 0.8: they cannot tell 0.9 from 0.89, and a sweep moving HIGH_RATE,
+  // MEDIUM_RATE and CHECKSUM_RATE one hundredth left the suite green. These
+  // rates land between the documented number and the number one hundredth
+  // below it, so only the documented one gives these answers.
+  const column = (matching, total, value) => Array.from({ length: total }, (unused, index) => ({
+    contact: index < matching ? value(index) : `ref-${index}`,
+  }))
+  const confidenceOf = (records) => fieldNamed(reportFor(records), 'contact').confidence
+  const address = (index) => `p${index}@example.test`
+
+  // 0.9 or more is high; 0.89 is not.
+  assert.equal(confidenceOf(column(90, 100, address)), 'high')
+  assert.equal(confidenceOf(column(89, 100, address)), 'medium')
+  // 0.5 or more is medium; 0.49 is not.
+  assert.equal(confidenceOf(column(50, 100, address)), 'medium')
+  assert.equal(confidenceOf(column(49, 100, address)), 'low')
+
+  // A checksum recogniser reaches high at 0.5, and 0.49 is not 0.5 either.
+  const card = (index) => ['4111 1111 1111 1111', '5555 5555 5555 4444'][index % 2]
+  assert.equal(confidenceOf(column(50, 100, card)), 'high')
+  assert.equal(confidenceOf(column(49, 100, card)), 'low')
 })
 
 test('a field keeps exactly the masked-example cap and no more', () => {

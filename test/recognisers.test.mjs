@@ -12,7 +12,15 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { CARD_RANGES, RECOGNISERS, issuedRange, luhnValid, normaliseValue, recogniserById } from '../src/index.mjs'
+import {
+  CARD_RANGES,
+  RECOGNISERS,
+  confidenceRank,
+  issuedRange,
+  luhnValid,
+  normaliseValue,
+  recogniserById,
+} from '../src/index.mjs'
 import { fieldNamed, reportFor } from './helpers.mjs'
 
 function matches(id, value) {
@@ -209,6 +217,54 @@ test('government-id: only the grouped shape, and it collides with internal refer
   // The known false-positive class, stated rather than wished away: an internal
   // reference in the same shape is indistinguishable from an identifier.
   assert.equal(matches('government-id', '412-00-7731'), true)
+})
+
+test('payment-card: a card number inside a longer value is not a card number', () => {
+  // Whole-value matching, for the recogniser that digs digits out of a value:
+  // without the shape check, `digitsOf` happily pulls sixteen digits out of a
+  // sentence and the checksum passes, so a note mentioning a card number turns
+  // into a card COLUMN.
+  assert.equal(matches('payment-card', 'ORD 4111 1111 1111 1111 X'), false)
+  assert.equal(matches('payment-card', 'card: 4111111111111111'), false)
+  assert.equal(matches('payment-card', '4111111111111111 (expired)'), false)
+  assert.equal(matches('payment-card', '4111 1111 1111 1111'), true)
+  const report = reportFor([{ note: 'charged card 4111 1111 1111 1111 today' }])
+  assert.equal(fieldNamed(report, 'note').classification, 'clean')
+})
+
+test('luhnValid answers for a run of digits, and refuses a length no card carries', () => {
+  // Exported, so its contract is its own. Without the length bound a single
+  // "0" passes -- the digit sum is zero and zero is divisible by ten -- and a
+  // twenty-digit string of zeros passes with it.
+  assert.equal(luhnValid('0'), false)
+  assert.equal(luhnValid(''), false)
+  assert.equal(luhnValid('00000000000000000000'), false)
+  assert.equal(luhnValid('0000000000000'), true)
+  assert.equal(luhnValid('4111111111111111'), true)
+  assert.equal(luhnValid('4111111111111112'), false)
+})
+
+test('network-address: IPv6 is judged by structure, and a second compression marker is not one', () => {
+  // The compression marker is exactly one `::`, and it stands for at least one
+  // omitted group, so the groups either side can number at most seven.
+  for (const value of ['2001:db8::1', '::1', '::', '1:2:3:4:5:6:7:8', 'fe80::1ff:fe23:4567:890a']) {
+    assert.equal(matches('network-address', value), true, value)
+  }
+  for (const value of ['1::2::3', ':::', '1:::2', 'g::1', '1:2:3:4:5:6:7:8:9', '1:2:3:4:5:6:7', '12345::1', ':']) {
+    assert.equal(matches('network-address', value), false, value)
+  }
+})
+
+test('confidenceRank refuses a confidence outside the scale rather than ranking it', () => {
+  // It is asked about a value that reached it from a document via the
+  // configuration, so "unknown" must stop the run and not sort as -1 -- below
+  // `low`, which would quietly make every comparison against it come out the
+  // same way.
+  assert.equal(confidenceRank('low'), 0)
+  assert.equal(confidenceRank('high'), 2)
+  for (const value of ['certain', '', 'LOW', undefined]) {
+    assert.throws(() => confidenceRank(value), /Unknown confidence/u, String(value))
+  }
 })
 
 test('network-address: an octet out of range or padded is not an address', () => {
