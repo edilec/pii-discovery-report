@@ -161,6 +161,37 @@ test('the human summary goes to stderr by default and is suppressed by --json', 
   assert.equal(quiet.stdout, noisy.stdout)
 })
 
+test('the human summary says every number the report does, line for line', async () => {
+  // A sweep deleted three of the lines this builds and nothing failed: the old
+  // test asked whether two phrases appeared somewhere in it. The summary is
+  // what a person reads in a terminal, so it is pinned whole, against a run
+  // whose numbers are not all the same.
+  const result = await runCli(['--dataset', SEEDED, '--config', SEEDED_CONFIG])
+  assert.equal(result.code, 1)
+  const report = JSON.parse(result.stdout)
+  const lines = result.stderr.trimEnd().split('\n')
+
+  // One line per finding, ordered exactly as the report orders them.
+  assert.equal(lines.length, report.findings.length + 5)
+  for (const [index, finding] of report.findings.entries()) {
+    assert.match(lines[index], new RegExp(`^${finding.severity.toUpperCase()} +${finding.ruleId} +dataset.json `, 'u'))
+    assert.ok(lines[index].endsWith(finding.location.pointer), lines[index])
+  }
+  // A blank line, then the three count lines, then the disclaimer.
+  assert.equal(lines[report.findings.length], '')
+  assert.equal(
+    lines[report.findings.length + 1],
+    '19 field(s) over 12 record(s) read of 12; 216 value(s) examined, 0 not examined.',
+  )
+  assert.equal(
+    lines[report.findings.length + 2],
+    '8 field(s) look like personal data, 0 uncertain, 0 undetermined, 11 with every value examined '
+    + 'and nothing matched.',
+  )
+  assert.equal(lines[report.findings.length + 3], '7 error, 0 warning, 1 info. Status fail.')
+  assert.equal(lines[report.findings.length + 4], report.disclaimer)
+})
+
 test('the shipped examples run, and each ends where its name says it does', async () => {
   const clean = await runCli(['--dataset', CLEAN, '--json'])
   assert.equal(clean.code, 0)
