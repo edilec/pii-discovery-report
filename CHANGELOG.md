@@ -7,6 +7,14 @@ public surface: renaming one is a breaking change and is recorded as such.
 
 ### Added
 
+- `dataset-duplicate-key`, an error rule in the unsettled set. `JSON.parse`
+  keeps one value of a repeated key and drops the rest before this tool sees the
+  document, so a record of `{"contact": "a@example.test", "contact": "INT-0001"}`
+  arrived as one field holding one value and was reported `clean` at exit 0 --
+  an absence claim over a value the document holds. The keys the text spells are
+  now counted and compared with the keys the parsed structure holds, and a
+  document where they differ is `incomplete` with every field `undetermined`.
+
 - `node-limit-exceeded`, an error rule in the unsettled set: the objects and
   arrays a document opens are counted in the text, before `JSON.parse` is
   called, and a document over 2000000 of them is refused unparsed. A file at the

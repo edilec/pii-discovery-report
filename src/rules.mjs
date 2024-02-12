@@ -24,6 +24,7 @@ export const SEVERITIES = Object.freeze(['error', 'warning', 'info'])
 export const RULE_SEVERITY = Object.freeze({
   'classification-ambiguous': 'warning',
   'classification-uncertain': 'warning',
+  'dataset-duplicate-key': 'error',
   'dataset-invalid': 'error',
   'dataset-not-utf8': 'error',
   'dataset-source-unsupported': 'error',
@@ -63,6 +64,7 @@ export const RULE_IDS = Object.freeze(Object.keys(RULE_SEVERITY).sort(byCodeUnit
  */
 export const UNSETTLED_RULES = Object.freeze([
   'classification-uncertain',
+  'dataset-duplicate-key',
   'dataset-invalid',
   'dataset-not-utf8',
   'dataset-source-unsupported',

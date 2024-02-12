@@ -77,6 +77,11 @@ parser. The human summary goes to `stderr`, and `--json` silences it.
   `/contact\.email`; a nested `contact` holding `email` has the path
   `contact.email` and the pointer `/contact/email`. They are two fields, and
   without the escaping they were one entry with one merged match rate.
+- A key repeated inside one object is refused rather than read. `JSON.parse`
+  keeps one value of a repeated key and drops the rest before this tool sees the
+  document, so the keys the text spells are counted and compared with the keys
+  the parsed structure holds. A document where they differ is `incomplete`, and
+  no field in it is reported as clean.
 - A field path segment must print exactly as it is stored. A key containing a
   control character, a bidi mark or an irregular run of whitespace is counted as
   unexamined rather than printed wrong, because `a<U+0001>b` and `a b` print the
@@ -220,6 +225,7 @@ sets the floor at which a candidate becomes a verdict.
 | --- | --- | --- |
 | `classification-ambiguous` | warning | two categories reached the floor in one field. The presence is settled and the category is not; both are named |
 | `classification-uncertain` | warning | a candidate sits below the floor |
+| `dataset-duplicate-key` | error | the document spells more keys than the parsed structure holds, so a key is repeated inside an object and a JSON reader kept one value of it |
 | `dataset-invalid` | error | the document is not the shape this tool reads |
 | `dataset-not-utf8` | error | the bytes are not valid UTF-8 |
 | `dataset-source-unsupported` | error | the export shape is not one this tool reads |

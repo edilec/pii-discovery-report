@@ -31,6 +31,7 @@ import { datasetDocument, runCli, withTempDir, writeJson, writeText } from './he
 /** A question this run was asked and did not settle: exit 2, never 0 and never 1. */
 const UNSETTLED = [
   'classification-uncertain',
+  'dataset-duplicate-key',
   'dataset-invalid',
   'dataset-not-utf8',
   'dataset-source-unsupported',

@@ -17,6 +17,28 @@ The counters are the reason the report can be read at all. `examined`, `matched`
 `unexamined`, `tooLong`, `notExact` and `notApplicable` are all on every field
 entry, so a reader can see what the verdict rests on instead of trusting it.
 
+## Why the keys are counted twice
+
+`JSON.parse` resolves a repeated key before this tool sees anything. A record of
+`{"contact": "ada@example.test", "contact": "INT-0001"}` arrives as one field
+holding one value, and the field was reported `clean` at exit 0 -- an absence
+claim over a value the document holds and this run never examined. The one
+failure this tool exists to avoid, arriving before it starts.
+
+Detecting it needs no parser. The document has already parsed by the time the
+question is asked, and in well-formed JSON a `:` follows a string only when that
+string is an object key, so the keys the text spells are the strings a colon
+follows. They are compared with the keys the parsed structure holds -- counted
+iteratively, because the node bound allows a document two million levels deep
+and a recursive count would exhaust the stack rather than answer. A difference
+is `dataset-duplicate-key`, `incomplete`, exit 2, and no field in that document
+is clean.
+
+The counter that would hurt is the one that miscounts a correct export, so both
+counters are driven over every shipped corpus and over the shapes a scanner gets
+wrong: a colon inside a string, an escaped quote, a key holding a backslash,
+whitespace and newlines between a key and its colon.
+
 ## Why an acknowledged field is not a silencer
 
 `acknowledged` says the operator has declared a field to hold personal data. It

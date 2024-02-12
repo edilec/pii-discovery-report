@@ -51,6 +51,8 @@ import {
   DATASET_SCHEMA_VERSION,
   MAX_NODES,
   SUPPORTED_SOURCES,
+  countKeysInText,
+  countKeysInValue,
   countNodes,
   observeRecords,
   pointerForPath,
@@ -284,6 +286,16 @@ function datasetLevelFindings(state, records, limits, file, fieldCount) {
       { suggestion: 'Raise limits.maxDepth deliberately, or flatten the export.' },
     ))
   }
+  if (state.duplicateKeys > 0) {
+    findings.push(makeFinding(
+      'dataset-duplicate-key',
+      msg`The document spells ${String(state.duplicateKeys)} more key or keys than the parsed structure
+          holds, so a key is repeated inside an object and a JSON reader kept one value of it. The values
+          it dropped were never examined, and no field in this document is reported as clean.`,
+      at(file, '/records'),
+      { suggestion: 'Export each key once per object; a repeated key silently loses every value but one.' },
+    ))
+  }
   if (state.unusablePaths > 0) {
     findings.push(makeFinding(
       'field-path-unusable',
@@ -393,6 +405,9 @@ export function buildReport({ fields, state, records, config, file, dataset }) {
     && !state.fieldsTruncated
     && state.tooDeep === 0
     && state.unusablePaths === 0
+    // A key the JSON reader resolved away held a value this run never saw, so
+    // no field in this document can be called clean.
+    && !(state.duplicateKeys > 0)
 
   const entries = []
   for (const observation of fields.values()) {
@@ -595,9 +610,12 @@ export async function discoverPersonalData({ dataset: datasetPath, config: confi
   }
 
   const { fields, state } = observeRecords(structure.dataset.records, config.limits, config.recognisers)
+  // Counted over the whole document, envelope included, because both counts
+  // cover the same text and only their DIFFERENCE means anything.
+  const duplicateKeys = countKeysInText(read.text) - countKeysInValue(document)
   return buildReport({
     fields,
-    state,
+    state: { ...state, duplicateKeys },
     records: structure.dataset.records,
     config,
     file,

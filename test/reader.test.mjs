@@ -11,7 +11,17 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { ConfigError, discoverPersonalData, observeRecords, validateConfig } from '../src/index.mjs'
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
+
+import {
+  ConfigError,
+  countKeysInText,
+  countKeysInValue,
+  discoverPersonalData,
+  observeRecords,
+  validateConfig,
+} from '../src/index.mjs'
 import {
   EXAMPLES,
   datasetDocument,
@@ -113,6 +123,61 @@ test('a subtree too deep is counted inside an array as well as inside an object'
   const atLimit = reportFor([{ rows: [{ contact: 'ada@example.test' }] }], { limits: { maxDepth: 3 } })
   assert.equal(ruleIds(atLimit).includes('record-too-deep'), false)
   assert.equal(fieldNamed(atLimit, 'rows[].contact').values.examined, 1)
+})
+
+test('a key repeated inside one object is incomplete, not a clean field', async () => {
+  // The value the JSON reader drops never reaches this tool at all, and the
+  // field it belonged to was reported `clean` at exit 0 -- an absence claim
+  // over a value the document holds. The address below is the one that was lost.
+  await withTempDir(async (directory) => {
+    const path = await writeText(directory, 'dataset.json',
+      '{"schemaVersion":"1","source":"tabular-export","records":'
+      + '[{"contact":"ada@example.test","contact":"INT-0001"}]}')
+    const result = await runCli(['--dataset', path, '--json'])
+    assert.equal(result.code, 2)
+    const report = JSON.parse(result.stdout)
+    assert.equal(report.status, 'incomplete')
+    assert.deepEqual(report.findings.map((finding) => finding.ruleId), ['dataset-duplicate-key'])
+    assert.match(report.findings[0].message, /spells 1 more key or keys than the parsed structure holds/u)
+    // Not clean, and not clean for the right reason: the whole document is
+    // unreliable, so every field in it is undetermined.
+    assert.deepEqual(report.fields.map((entry) => entry.classification), ['undetermined'])
+    assert.equal(result.stdout.includes('ada@example.test'), false)
+  })
+})
+
+test('the key counts agree on every document that repeats nothing', async () => {
+  // The other side, and the side that would hurt: a false count here refuses a
+  // correct export. Both counters are driven over the shipped corpora and over
+  // the shapes a scanner gets wrong -- a colon inside a string, an escaped
+  // quote, a key with a backslash, whitespace before the colon.
+  for (const name of ['clean/dataset.json', 'seeded/dataset.json', 'incomplete/dataset.json', 'seeded/config.json']) {
+    const text = await readFile(join(EXAMPLES, name), 'utf8')
+    assert.equal(countKeysInText(text), countKeysInValue(JSON.parse(text)), name)
+  }
+  for (const text of [
+    '{"a":"x : y","b":1}',
+    '{"a":"he said \\"hi\\": really","b":[1,2]}',
+    '{"a\\\\b" : 1}',
+    '{"a"\t:\n1, "b" : {"c" : [{"d":1}]}}',
+    '{}',
+    '[]',
+    '"just a string : with a colon"',
+    '{"nested":{"deep":{"deeper":{"x":1}}}}',
+  ]) {
+    assert.equal(countKeysInText(text), countKeysInValue(JSON.parse(text)), text)
+  }
+  // It counts KEYS, not colons. The two are the same in valid JSON, which is
+  // the only kind this is asked about -- but it is exported, so a colon that
+  // follows something other than a string is not a key here either.
+  assert.equal(countKeysInText('[1:2]'), 0)
+  assert.equal(countKeysInText('a:b'), 0)
+  assert.equal(countKeysInText('{"a":1}:'), 1)
+
+  // And a document that does repeat one: the text spells more than the
+  // structure holds, whatever the value is.
+  assert.equal(countKeysInText('{"a":1,"a":2}') - countKeysInValue(JSON.parse('{"a":1,"a":2}')), 1)
+  assert.equal(countKeysInText('{"a":{"b":1,"b":2,"b":3}}') - countKeysInValue(JSON.parse('{"a":{"b":1,"b":2,"b":3}}')), 2)
 })
 
 test('the library refuses a missing dataset path as configuration, not as an execution failure', async () => {

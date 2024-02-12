@@ -134,6 +134,77 @@ export function countNodes(text, limit) {
   return { nodes, exceeded: false }
 }
 
+/**
+ * How many key/value pairs the DOCUMENT spells, counted in the text.
+ *
+ * `JSON.parse` resolves a repeated key before this tool sees anything: a record
+ * of `{"contact": "ada@example.test", "contact": "INT-0001"}` arrives as one
+ * field holding one value, and the field was reported `clean` -- an absence
+ * claim over a value that existed in the document and was never examined. That
+ * is the one failure this tool exists to avoid, arriving before it starts.
+ *
+ * The count is cheap and exact for a document that PARSED, which is the only
+ * kind this is asked about: in well-formed JSON a `:` follows a string only
+ * when that string is an object key, so the pairs are the strings a colon
+ * follows. It is compared with the keys the parsed structure holds.
+ */
+export function countKeysInText(text) {
+  let keys = 0
+  let inString = false
+  let escaped = false
+  let stringEnded = -1
+  for (let index = 0; index < text.length; index += 1) {
+    const character = text[index]
+    if (inString) {
+      if (escaped) escaped = false
+      else if (character === '\\') escaped = true
+      else if (character === '"') {
+        inString = false
+        stringEnded = index
+      }
+      continue
+    }
+    if (character === '"') {
+      inString = true
+      continue
+    }
+    if (character === ':' && stringEnded >= 0) keys += 1
+    // Only whitespace may sit between a key and its colon.
+    if (character !== ' ' && character !== '\t' && character !== '\n' && character !== '\r') stringEnded = -1
+  }
+  return keys
+}
+
+/**
+ * How many keys the PARSED structure holds.
+ *
+ * Iterative on purpose: the node bound allows a document two million levels
+ * deep, and a recursive walk over one would exhaust the call stack rather than
+ * answer.
+ */
+export function countKeysInValue(value) {
+  let keys = 0
+  const pending = [value]
+  while (pending.length > 0) {
+    const current = pending.pop()
+    if (Array.isArray(current)) {
+      for (const element of current) pending.push(element)
+      continue
+    }
+    if (isRecordObjectValue(current)) {
+      for (const key of Object.keys(current)) {
+        keys += 1
+        pending.push(current[key])
+      }
+    }
+  }
+  return keys
+}
+
+function isRecordObjectValue(value) {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
 function isRecordObject(value) {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
