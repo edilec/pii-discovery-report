@@ -334,19 +334,20 @@ record in this repository describes a real person, and
 
 ### At the documented maximum
 
-Measured on one machine under heavy load, with `/usr/bin/time -l`, so the wall
-clock says more about the load than about the tool; the CPU time and the peak
-resident set are the figures worth reading.
+Measured on one machine with `/usr/bin/time -l`. The CPU time and the peak
+resident set are the figures worth reading; a wall clock measures the machine.
 
 | Input, all bounds at their documented ceiling | Peak RSS | CPU | Exit |
 | --- | ---: | ---: | ---: |
-| 200000 records x 10 fields, 2000000 values examined, 15.4 MiB | 155 MB | 2.4 s | 0 |
-| 4194274 values in one array, 16 MiB | 194 MB | 2.4 s | 0 |
-| 2000000 objects and arrays, the node cap exactly, 5.7 MiB | 364 MB | 0.4 s | 2 |
-| 8388000 nested arrays, 16 MiB, refused before the parse | 88 MB | 0.1 s | 2 |
+| 200000 records x 10 fields, 2000000 values examined, 15.4 MiB | 152 MB | 1.8 s | 0 |
+| 4194274 values in one array, 16 MiB | 185 MB | 2.0 s | 0 |
+| 2000000 objects and arrays, the node cap exactly, 5.7 MiB | 380 MB | 0.4 s | 2 |
+| 8388000 nested arrays, 16 MiB, refused before the parse | 84 MB | 0.1 s | 2 |
 
 The last row is the one that matters: before the node cap it was **1.31 GB**,
-because every other limit fires after `JSON.parse` has built the structure.
+because every other limit fires after `JSON.parse` has built the structure. The
+third row is now the worst an accepted document can cost, and it is the cap
+itself: two million containers on the heap.
 
 ## Non-goals
 

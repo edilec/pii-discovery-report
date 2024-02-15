@@ -184,25 +184,26 @@ export function countKeysInText(text) {
  */
 export function countKeysInValue(value) {
   let keys = 0
-  const pending = [value]
+  // Only containers go on the stack. A scalar carries no key, and an array of
+  // four million strings would otherwise put four million entries on it: the
+  // walk has to cost about what the document costs, not a multiple of it.
+  const pending = isContainer(value) ? [value] : []
   while (pending.length > 0) {
     const current = pending.pop()
     if (Array.isArray(current)) {
-      for (const element of current) pending.push(element)
+      for (const element of current) if (isContainer(element)) pending.push(element)
       continue
     }
-    if (isRecordObjectValue(current)) {
-      for (const key of Object.keys(current)) {
-        keys += 1
-        pending.push(current[key])
-      }
+    for (const key of Object.keys(current)) {
+      keys += 1
+      if (isContainer(current[key])) pending.push(current[key])
     }
   }
   return keys
 }
 
-function isRecordObjectValue(value) {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
+function isContainer(value) {
+  return typeof value === 'object' && value !== null
 }
 
 function isRecordObject(value) {
