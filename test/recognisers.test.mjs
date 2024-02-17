@@ -239,6 +239,9 @@ test('luhnValid answers for a run of digits, and refuses a length no card carrie
   assert.equal(luhnValid('0'), false)
   assert.equal(luhnValid(''), false)
   assert.equal(luhnValid('00000000000000000000'), false)
+  // Both sides of the floor. Twelve digits is the length four Maestro rows used
+  // to declare, and the shortest number anything here reads is thirteen.
+  assert.equal(luhnValid('000000000000'), false)
   assert.equal(luhnValid('0000000000000'), true)
   assert.equal(luhnValid('4111111111111111'), true)
   assert.equal(luhnValid('4111111111111112'), false)

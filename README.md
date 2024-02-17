@@ -388,7 +388,8 @@ itself: two million containers on the heap.
 - `bin/` — the command-line entry point
 - `examples/` — three runnable corpora: passing, failing and incomplete
 - `test/` — `node:test` suites covering the acceptance criteria item by item
-- `docs/` — design notes
+- `docs/` — design notes, and the mutation sweep's enumeration in
+  [`docs/mutation-sweep.md`](./docs/mutation-sweep.md)
 
 ## Development
 

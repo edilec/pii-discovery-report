@@ -2,6 +2,8 @@
 
 The README is the contract. These are the decisions behind it, kept where the
 next person to change the tool will look for them.
+[`mutation-sweep.md`](./mutation-sweep.md) beside this file is the enumeration
+the guarantees here were driven against, and what survived it.
 
 ## Why `clean` is the only hard word
 
