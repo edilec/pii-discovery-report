@@ -25,6 +25,11 @@ public surface: renaming one is a breaking change and is recorded as such.
 
 ### Removed
 
+- The `evidence` branch of `makeFinding`. No rule in this tool passes one -- an
+  excerpt a reader needs is a mask, and a mask goes in the message beside the
+  count it explains -- so the branch was a capability nothing reached and
+  nothing defended. The schema test now pins the key set a finding may carry.
+
 - `num`, a number formatter exported from `src/text.mjs`, tested, and called
   from nowhere in `src` or `bin`. An unreferenced helper that looks like part of
   the output boundary is worse than none: the next reader greps, finds it, and

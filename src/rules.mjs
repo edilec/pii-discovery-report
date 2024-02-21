@@ -100,7 +100,10 @@ export function makeFinding(ruleId, message, location, extra = {}) {
     throw new Error(`Finding "${ruleId}" must build its message with the msg tagged template`)
   }
   const finding = { ruleId, severity: severityFor(ruleId), message: message.text, location }
-  if (extra.evidence !== undefined) finding.evidence = sanitize(extra.evidence)
+  // No `evidence` branch: no rule in this tool emits one. Every excerpt a
+  // reader needs is a MASK, and a mask belongs in the message beside the count
+  // it explains. A branch nothing reaches is a branch nothing defends, and the
+  // schema test pins the key set a finding may carry.
   if (extra.suggestion !== undefined) {
     assertNoForbiddenClaim(extra.suggestion, 'A finding suggestion')
     finding.suggestion = sanitize(extra.suggestion)

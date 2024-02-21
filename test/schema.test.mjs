@@ -65,7 +65,7 @@ test('every finding carries a known rule, a known severity and a relative locati
       }
       if (finding.location.pointer !== undefined) assert.ok(finding.location.pointer.startsWith('/'))
       assert.deepEqual(
-        Object.keys(finding).filter((key) => !['ruleId', 'severity', 'message', 'location', 'evidence', 'suggestion'].includes(key)),
+        Object.keys(finding).filter((key) => !['ruleId', 'severity', 'message', 'location', 'suggestion'].includes(key)),
         [],
       )
     }
