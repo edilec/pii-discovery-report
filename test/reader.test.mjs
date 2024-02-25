@@ -57,6 +57,27 @@ test('a document that is not a JSON object is refused as one, whatever else it i
   })
 })
 
+test('a dataset that declares another schema version is refused, and version 1 is not', async () => {
+  // Without this refusal a document written to a schema this tool has never
+  // seen is read as though it were this one: the field paths would be real and
+  // the counts would mean nothing.
+  await withTempDir(async (directory) => {
+    for (const schemaVersion of ['2', 1, '1.0', '', undefined]) {
+      const path = await writeJson(directory, 'dataset.json', {
+        schemaVersion, source: 'tabular-export', records: [{ contact: 'ada@example.test' }],
+      })
+      const result = await runCli(['--dataset', path, '--json'])
+      assert.equal(result.code, 2, String(schemaVersion))
+      const report = JSON.parse(result.stdout)
+      assert.deepEqual(report.findings.map((finding) => finding.ruleId), ['dataset-invalid'], String(schemaVersion))
+      assert.match(report.findings[0].message, /does not declare schemaVersion 1/u)
+      assert.equal(report.summary.checked, 0)
+    }
+    const current = await writeJson(directory, 'current.json', datasetDocument([{ a: 'b' }]))
+    assert.equal((await runCli(['--dataset', current, '--json'])).code, 0)
+  })
+})
+
 test('a dataset name that would not print as it is stored is refused, not printed', async () => {
   await withTempDir(async (directory) => {
     for (const name of [7, '', `‎‏`, 'x'.repeat(129)]) {

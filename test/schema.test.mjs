@@ -79,6 +79,50 @@ test('findings come out already sorted by the documented key', () => {
   }
 })
 
+test('a finding carries a suggestion only when it has one, and never the word undefined', () => {
+  // Removing the guard around it put the string "undefined" on every finding
+  // that has no next step to suggest, and the suite stayed green: nothing
+  // looked at the KEYS a finding carries, only at the ones it does.
+  const report = reportFor(
+    [{ full_name: 'Avery Stone' }, { full_name: 'Jide Okafor' }],
+    { minConfidence: 'low', acknowledged: ['full_name'] },
+  )
+  const acknowledged = report.findings.find((finding) => finding.ruleId === 'personal-data-acknowledged')
+  assert.notEqual(acknowledged, undefined)
+  assert.equal(Object.hasOwn(acknowledged, 'suggestion'), false)
+  assert.deepEqual(Object.keys(acknowledged), ['ruleId', 'severity', 'message', 'location'])
+
+  const detected = reportFor([{ contact: 'ada@example.test' }, { contact: 'grace@example.test' }])
+    .findings.find((finding) => finding.ruleId === 'personal-data-detected')
+  assert.equal(typeof detected.suggestion, 'string')
+  assert.match(detected.suggestion, /^Confirm the field against the system of record/u)
+})
+
+test('the summary counts one field in exactly one classification, and none of them is assumed', () => {
+  // `summary.uncertain` was never asserted, so the line that counts it could be
+  // deleted and the number stayed 0 in every report.
+  const report = reportFor(
+    Array.from({ length: 4 }, (unused, index) => ({
+      contact: `p${index}@example.test`,
+      mixed: index === 0 ? 'q@example.test' : `ORD-${index}`,
+      order_ref: `ORD-${index}`,
+      long: 'x'.repeat(40),
+    })),
+    { limits: { maxValueLength: 32 } },
+  )
+  const counts = report.summary
+  assert.equal(counts.fields, 4)
+  assert.equal(counts.personalData, 1, 'contact: four of four')
+  assert.equal(counts.uncertain, 1, 'mixed: one of four is below the floor')
+  assert.equal(counts.undetermined, 1, 'long: every value is past the length limit')
+  assert.equal(counts.clean, 1, 'order_ref: every value examined and nothing matched')
+  assert.equal(
+    counts.personalData + counts.uncertain + counts.undetermined + counts.clean,
+    counts.fields,
+    'every field lands in exactly one classification',
+  )
+})
+
 test('every field entry uses a known classification and carries the counts behind it', () => {
   for (const report of everyReport()) {
     for (const entry of report.fields) {
