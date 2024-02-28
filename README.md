@@ -318,6 +318,11 @@ personal data and 12 fields without, at the default confidence floor:
 | non-personal fields drawing any candidate at all | 1 of 12 |
 | non-personal fields drawing nothing at all | 11 of 12 |
 
+A 231-mutation sweep over the finished tree caught 219, and the ten it did not
+are equivalent mutants with the proof beside each one in
+[`docs/mutation-sweep.md`](./docs/mutation-sweep.md), which also carries the
+enumeration so the list can be re-derived rather than believed.
+
 The one false positive is named rather than rounded away. `legacy_ref` holds
 internal references of the form `412-00-7731`, which is exactly the shape a
 government identifier takes; nothing in the value distinguishes them, and this

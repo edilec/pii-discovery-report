@@ -5,6 +5,11 @@ public surface: renaming one is a breaking change and is recorded as such.
 
 ## Unreleased
 
+Every change below was driven by a defect reproduced first, and the round closed
+with a 231-mutation sweep whose enumeration is in `docs/mutation-sweep.md`: 219
+caught, 10 equivalent mutants named with their proofs, 2 that cannot be applied
+without a syntax error, no timeouts.
+
 ### Added
 
 - `dataset-duplicate-key`, an error rule in the unsettled set. `JSON.parse`
