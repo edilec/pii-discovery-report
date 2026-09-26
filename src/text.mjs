@@ -1,0 +1,361 @@
+/**
+ * The boundary every untrusted string crosses on its way to output, plus the
+ * two things that decide whether the output can be trusted at all: how a parse
+ * failure is described, and what this tool is allowed to say about its own
+ * work.
+ *
+ * Three defences live here, and each exists because its absence produced a real
+ * defect in this catalog:
+ *
+ * 1. `sanitize` is the ONE boundary. Field paths, dataset names, recogniser
+ *    ids, messages, evidence and masked examples all pass through it -- not
+ *    only an `evidence` field. A shipped tool sanitised its evidence carefully
+ *    and let an identifier carrying a newline forge whole lines in the report.
+ * 2. `parseFailureDetail` recognises the quoting shape BEFORE looking for a
+ *    position. A document that literally reads `at position 1` makes V8 quote
+ *    it back, and a position-first helper slices the document out of its own
+ *    error message. For a tool whose input is a dataset of personal data, that
+ *    is the leak that matters most.
+ * 3. `msg` splits this tool's own literals from interpolated values. The
+ *    literals are checked for claims this tool is not entitled to make; the
+ *    values, which come from an untrusted document, are sanitised. The scan
+ *    looks at what this tool WROTE, never at what it read -- a dataset field
+ *    literally named `proven_customer` is data and must not stop the run.
+ */
+
+/** Deterministic order: UTF-16 code unit, never locale collation. */
+export function byCodeUnit(a, b) {
+  return a === b ? 0 : a < b ? -1 : 1
+}
+
+/**
+ * U+2028 and U+2029, written as escape text so that no editor, transfer or
+ * copy-paste can quietly turn the escape into the character it names.
+ */
+export const LINE_SEPARATORS = '\u2028\u2029'
+
+/**
+ * Everything stripped from an untrusted string before it reaches output.
+ *
+ * `\p{Cc}` is C0, DEL and C1: U+0085 and U+009B forge lines in a human report
+ * just as U+000A does, and stripping C0 alone has shipped as a bug four times
+ * in this catalog. `\p{Cf}` is the bidi controls and the other invisible format
+ * characters, which reorder or hide displayed text. The two separators belong
+ * to neither class and have to be named.
+ */
+const UNSAFE_CHARACTERS = new RegExp(`[\\p{Cc}\\p{Cf}${LINE_SEPARATORS}]`, 'gu')
+
+export const EVIDENCE_LIMIT = 200
+export const MAX_PATH_LENGTH = 128
+
+/**
+ * Describe any value as a string without ever letting it stop the run.
+ *
+ * `String({ toString: {} })` throws `Cannot convert object to primitive value`,
+ * and a dataset is JSON this tool did not write: `{"a": {"toString": {}}}`
+ * parses into exactly that. A value that will not convert is described by its
+ * shape and never reproduced.
+ */
+export function describeValue(value) {
+  if (typeof value === 'string') return value
+  if (value === null) return 'null'
+  if (value === undefined) return 'undefined'
+  if (Array.isArray(value)) return '[array]'
+  try {
+    return String(value)
+  } catch {
+    return typeof value === 'function' ? '[function]' : '[object]'
+  }
+}
+
+/** A bounded, control-character-free rendering of an untrusted string. */
+export function sanitize(value, limit = EVIDENCE_LIMIT) {
+  const flat = describeValue(value)
+    .replace(UNSAFE_CHARACTERS, ' ')
+    .replace(/\s+/gu, ' ')
+    .trim()
+  return flat.length > limit ? `${flat.slice(0, limit - 3)}...` : flat
+}
+
+/**
+ * Whether a value is a string that still says something once rendered.
+ *
+ * `value.trim().length > 0` is the wrong question and has shipped as a bug:
+ * `trim` removes ECMAScript whitespace only, so a field key of U+0001 or U+200E
+ * passes it and then renders as the empty string. A field path that renders
+ * empty is not a path -- two different fields would share it -- so this asks
+ * about the rendered form, and about the length this tool will actually print.
+ */
+export function isRenderableString(value, limit = MAX_PATH_LENGTH) {
+  return typeof value === 'string' && value.length <= limit && sanitize(value, limit) !== ''
+}
+
+/** A composed field path -- segments joined by a dot -- may be this long. */
+export const MAX_FIELD_PATH_LENGTH = 512
+
+/**
+ * Whether a name may be used as a field path segment.
+ *
+ * Stricter than `isRenderableString`, and deliberately so. A key that merely
+ * SURVIVES sanitising is not safe to use as an identity: `a<U+0001>b` and `a b`
+ * both print as `a b`, so one of them would silently become the other in the
+ * report while remaining two different fields in the document. Requiring the
+ * name to print EXACTLY as it is stored removes THAT collision -- and only that
+ * one. The other collision is composition, and it is closed by
+ * `escapePathSegment` rather than here: a key may contain the `.` and `[]` a
+ * path is built from, and this check accepts such a key because it prints
+ * exactly as it is stored. A key that fails this one is counted as unexamined
+ * rather than printed wrong.
+ */
+export function isUsableName(value, limit = MAX_PATH_LENGTH) {
+  return (
+    typeof value === 'string'
+    && value.length > 0
+    && value.length <= limit
+    && sanitize(value, limit) === value
+  )
+}
+
+/**
+ * Compose one document key into one segment of a field path.
+ *
+ * A field path is built by joining keys with `.`, and an array level is marked
+ * with `[]`. Both markers can occur INSIDE a key -- JSON says nothing about what
+ * a key may contain -- and joining without escaping them collapses two different
+ * fields onto one path. That is not hypothetical: a flat column literally named
+ * `contact.email` and a nested `contact` object holding `email` produced ONE
+ * report entry with one merged match rate, and acknowledging the flat column
+ * silenced the nested one, at exit 0 and status `pass`.
+ *
+ * So `\`, `.`, `[` and `]` are escaped with a backslash. An escaped key can
+ * therefore never contain a bare `[` or `]`, which is what makes an array marker
+ * in a composed path unambiguous, and `splitFieldPath` inverts this exactly.
+ *
+ * A path is shown to the reader in this composed form and compared in it, so an
+ * `acknowledged` entry for a key containing one of these characters is written
+ * the same way.
+ */
+export function escapePathSegment(key) {
+  return key.replace(/[\\.[\]]/gu, (character) => `\\${character}`)
+}
+
+/**
+ * Split a composed field path back into the keys it was built from.
+ *
+ * One entry per level: `key` is the key exactly as the document stores it,
+ * `arrays` is how many array levels were walked at that key, and `segment` is
+ * the composed text of that level -- the escaped key with its markers, which is
+ * what a pointer token is built from. Nothing else in this tool may split a
+ * path on `.`, because that is the same collision arriving through the back
+ * door: the pointer printed for the flat column `contact.email` was
+ * `/contact/email`, which names the nested field, and a pointer built from an
+ * UNESCAPED key gives a column literally named `tags[]` the pointer `/tags[]`,
+ * which names the array.
+ */
+export function splitFieldPath(path) {
+  const segments = []
+  let key = ''
+  let segment = ''
+  let arrays = 0
+  const endSegment = () => {
+    segments.push({ key, arrays, segment })
+    key = ''
+    segment = ''
+    arrays = 0
+  }
+  for (let index = 0; index < path.length; index += 1) {
+    const character = path[index]
+    if (character === '\\' && index + 1 < path.length) {
+      key += path[index + 1]
+      segment += character + path[index + 1]
+      index += 1
+      continue
+    }
+    if (character === '.') {
+      endSegment()
+      continue
+    }
+    if (character === '[' && path[index + 1] === ']') {
+      arrays += 1
+      segment += '[]'
+      index += 1
+      continue
+    }
+    key += character
+    segment += character
+  }
+  endSegment()
+  return segments
+}
+
+/**
+ * A rate as a report records it: a finite number, four decimals, never -0.
+ *
+ * Rounding must never turn a rate that is not zero INTO zero. One match in two
+ * hundred thousand values rounds to `0`, and `matched: 1` beside `matchRate: 0`
+ * is two numbers disagreeing about the same evidence. A rate too small to
+ * survive the rounding is recorded as it is.
+ */
+export function rate(matched, evaluated) {
+  if (evaluated <= 0) return 0
+  const exact = matched / evaluated
+  const value = Math.round(exact * 10000) / 10000
+  if (value === 0 && exact !== 0) return exact
+  return Object.is(value, -0) ? 0 : value
+}
+
+export const UNPARSEABLE = 'the document could not be parsed as JSON'
+
+/** Where V8 puts the offending offset. Safe: an offset says nothing about content. */
+const POSITION = /at position \d+(?: \(line \d+ column \d+\))?/u
+
+/**
+ * The shape that quotes the input. Recognised FIRST, and the order is the whole
+ * guard: a document whose own text reads `at position 1` makes V8 write
+ * `Unexpected token 'a', "at position 1" is not valid JSON`, so looking for the
+ * offset first finds that phrase INSIDE the quoted span and slices the document
+ * straight back out. The `s` flag matters too -- the quoted span can carry a
+ * newline, and a non-dotAll pattern silently fails to recognise the shape it is
+ * there to catch. A leading `...` means the quoted run came from the middle of
+ * the document rather than its start.
+ */
+const QUOTES_THE_INPUT = /^Unexpected token (.+?), (\.\.\.)?".*"(?:\.\.\.)? is not valid JSON$/su
+
+function describeParseFailure(message) {
+  const quoting = QUOTES_THE_INPUT.exec(message)
+  if (quoting !== null) {
+    const where = quoting[2] === undefined ? 'at the start of the document' : 'inside the document'
+    return `unexpected token ${quoting[1]} ${where}`
+  }
+  const position = POSITION.exec(message)
+  if (position !== null) return message.slice(0, position.index + position[0].length)
+  if (message === 'Unexpected end of JSON input') return message
+  return UNPARSEABLE
+}
+
+/**
+ * Say what a `JSON.parse` failure was, without reproducing the document.
+ *
+ * V8 reports a parse failure two ways and one of them quotes the input back:
+ * `Unexpected token 'A', "AKIAIOSFODNN7EXAMPLE" is not valid JSON`. A dataset
+ * short enough to be one personal record is therefore reproduced in full by its
+ * own error message, and `sanitize` does not stop that -- it strips control
+ * characters and cuts from the end, while the quoted input sits at the front.
+ *
+ * The closing guard is deliberate belt and braces and is why this function is
+ * safe against wordings it has never seen: across the measured corpus of V8
+ * parse messages, every message carrying no quoted snippet carries no double
+ * quote at all, because V8 quotes JSON punctuation with apostrophes. A double
+ * quote surviving to the end therefore means a snippet survived, whatever the
+ * branches above concluded, and the generic sentence is used instead.
+ */
+export function parseFailureDetail(error) {
+  const message = describeValue(error?.message ?? '')
+  const detail = describeParseFailure(message)
+  return detail.includes('"') ? UNPARSEABLE : detail
+}
+
+/**
+ * Claims this tool is not entitled to make about its own work.
+ *
+ * It reads a dataset document somebody exported to a file. It opens no
+ * connection, runs no query, resolves no host and sees no system of record. It
+ * recognises PATTERNS: a value shaped like an identifier is not the same fact
+ * as a value that identifies a person, and no amount of pattern matching closes
+ * that gap. A sentence phrased as though it had it would be a claim about a
+ * capability this tool does not have, so the phrasing is refused at
+ * construction time rather than at review time.
+ *
+ * Only this tool's OWN literals are scanned, never the dataset.
+ */
+export const FORBIDDEN_CLAIMS = Object.freeze([
+  'guaranteed', 'guarantees', 'certainly', 'definitely', 'proves', 'proven',
+  'exhaustive', 'infallible', 'certified', 'irrefutable',
+  'we verified', 'we confirmed', 'is confirmed', 'has been confirmed',
+  'this tool connected', 'this tool queried', 'we queried', 'we scanned the system',
+  'all personal data was found', 'no personal data exists', 'every personal record',
+])
+
+const FORBIDDEN_PATTERN = new RegExp(
+  `\\b(?:${FORBIDDEN_CLAIMS.map((term) => term.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')).join('|')})\\b`,
+  'iu',
+)
+
+export function findForbiddenClaim(text) {
+  const match = FORBIDDEN_PATTERN.exec(describeValue(text))
+  return match === null ? null : match[0]
+}
+
+export function assertNoForbiddenClaim(text, what) {
+  const term = findForbiddenClaim(text)
+  if (term !== null) {
+    throw new Error(
+      `${what} may not claim more than pattern evidence supports: "${term}". This tool reads an `
+      + `exported dataset document and recognises patterns in it.`,
+    )
+  }
+}
+
+/**
+ * A message whose literals have been checked and whose values are sanitised.
+ *
+ * It is the OUTPUT of `msg` and nothing else should construct one: the class
+ * carries the fact that its literals have already been through the claim check,
+ * and constructing one directly around unchecked prose would assert something
+ * that is not true. It is deliberately NOT checked in the constructor, because
+ * by then the text also holds sanitised values from an untrusted document, and
+ * a document whose field is named `proven_customer` must not stop the run.
+ */
+export class SafeMessage {
+  constructor(text) {
+    this.text = text
+    Object.freeze(this)
+  }
+
+  toString() {
+    return this.text
+  }
+}
+
+/**
+ * Build a finding message.
+ *
+ * The tagged-template split is the point: `strings` is this tool's own voice
+ * and is checked for claims it may not make, while `values` come from the
+ * dataset and are only sanitised.
+ */
+export function msg(strings, ...values) {
+  let out = ''
+  for (let index = 0; index < strings.length; index += 1) {
+    // Runs of whitespace in this tool's own literals collapse to one space, so
+    // a sentence may be wrapped across source lines without wrapping the
+    // report, and so a phrase this tool may not use cannot be hidden by a line
+    // break.
+    const literal = strings[index].replace(/\s+/gu, ' ')
+    assertNoForbiddenClaim(literal, 'A finding message')
+    out += literal
+    if (index < values.length) {
+      const value = values[index]
+      // A SafeMessage is this tool's own prose that has ALREADY been through
+      // the claim check, so it is inserted verbatim. Everything else came from
+      // a document and is only sanitised. Without this branch, a message built
+      // in two halves would have to interpolate its second half as a value --
+      // and prose interpolated as a value is prose the claim check never sees,
+      // which is the guard failing silently in the direction that matters.
+      out += value instanceof SafeMessage ? value.text : sanitize(value)
+    }
+  }
+  return new SafeMessage(out)
+}
+
+export function at(file, pointer) {
+  const location = {}
+  if (file !== null && file !== undefined) location.file = file
+  if (pointer !== null && pointer !== undefined) location.pointer = pointer
+  return location
+}
+
+/** JSON Pointer escaping, applied to an already sanitised token. */
+export function pointerToken(value) {
+  return sanitize(value, MAX_PATH_LENGTH).replace(/~/gu, '~0').replace(/\//gu, '~1')
+}

@@ -1,0 +1,53 @@
+{
+  "name": "pii-discovery-report",
+  "version": "0.1.0",
+  "description": "Run configured recognisers over an exported dataset and report which fields look like personal data, with the basis, the confidence, the counts behind it and masked examples.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "lint": "node --check src/text.mjs && node --check src/rules.mjs && node --check src/recognisers.mjs && node --check src/config.mjs && node --check src/dataset.mjs && node --check src/index.mjs && node --check bin/pii-discovery-report.mjs && node --check test/helpers.mjs && node --check test/acceptance.test.mjs && node --check test/bounds.test.mjs && node --check test/cli.test.mjs && node --check test/config.test.mjs && node --check test/honesty.test.mjs && node --check test/ordering.test.mjs && node --check test/parse.test.mjs && node --check test/paths.test.mjs && node --check test/reader.test.mjs && node --check test/recognisers.test.mjs && node --check test/sanitise.test.mjs && node --check test/schema.test.mjs && node --check test/severity.test.mjs && node --check test/unsettled.test.mjs",
+    "test": "node --test",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=src/**",
+    "example": "node bin/pii-discovery-report.mjs --dataset examples/clean/dataset.json",
+    "example:failing": "node bin/pii-discovery-report.mjs --dataset examples/seeded/dataset.json --config examples/seeded/config.json; test $? -eq 1",
+    "example:incomplete": "node bin/pii-discovery-report.mjs --dataset examples/incomplete/dataset.json --config examples/incomplete/config.json; test $? -eq 2",
+    "pack:check": "npm pack --dry-run",
+    "check": "npm run lint && npm test && npm run example && npm run example:failing && npm run example:incomplete && npm run pack:check"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/edilec/pii-discovery-report.git"
+  },
+  "bin": {
+    "pii-discovery-report": "./bin/pii-discovery-report.mjs"
+  },
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "examples",
+    "docs",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "pii",
+    "personal-data",
+    "data-discovery",
+    "privacy",
+    "masking",
+    "audit",
+    "cli"
+  ],
+  "author": "Edilec Private Limited",
+  "bugs": {
+    "url": "https://github.com/edilec/pii-discovery-report/issues"
+  },
+  "homepage": "https://github.com/edilec/pii-discovery-report#readme"
+}

@@ -1,0 +1,127 @@
+{
+  "schemaVersion": "1",
+  "dataset": "stock-catalogue-sample",
+  "source": "tabular-export",
+  "records": [
+    {
+      "order_ref": "ORD-2026-000100",
+      "created_at": "2026-03-01T11:00:00Z",
+      "product_name": "Hex Bolt M8",
+      "sku": "4901234512345",
+      "unit_price": 9.0,
+      "quantity": 12,
+      "in_stock": true,
+      "warehouse_code": "LDN-03",
+      "supplier": {
+        "company_name": "Northwind Fixings Ltd"
+      },
+      "notes": "Call before delivery",
+      "version": "3.0.1"
+    },
+    {
+      "order_ref": "ORD-2026-000111",
+      "created_at": "2026-03-02T11:00:00Z",
+      "product_name": "Cable Gland 20mm",
+      "sku": "5012345123456",
+      "unit_price": 9.75,
+      "quantity": 15,
+      "in_stock": false,
+      "warehouse_code": "MAN-01",
+      "supplier": {
+        "company_name": "Baytree Components Ltd"
+      },
+      "notes": "Leave at reception",
+      "version": "3.1.1"
+    },
+    {
+      "order_ref": "ORD-2026-000122",
+      "created_at": "2026-03-03T11:00:00Z",
+      "product_name": "Junction Box 4W",
+      "sku": "6023456234567",
+      "unit_price": 10.5,
+      "quantity": 18,
+      "in_stock": true,
+      "warehouse_code": "BRS-02",
+      "supplier": {
+        "company_name": "Harrow Cable Co"
+      },
+      "notes": "Fragile, do not stack",
+      "version": "3.2.1"
+    },
+    {
+      "order_ref": "ORD-2026-000133",
+      "created_at": "2026-03-04T11:00:00Z",
+      "product_name": "Din Rail 35mm",
+      "sku": "7034567345678",
+      "unit_price": 11.25,
+      "quantity": 21,
+      "in_stock": false,
+      "warehouse_code": "LDN-01",
+      "supplier": {
+        "company_name": "Northwind Fixings Ltd"
+      },
+      "notes": "Book a loading bay",
+      "version": "3.3.1"
+    },
+    {
+      "order_ref": "ORD-2026-000144",
+      "created_at": "2026-03-05T11:00:00Z",
+      "product_name": "Ferrule Kit 12",
+      "sku": "8045678456789",
+      "unit_price": 12.0,
+      "quantity": 24,
+      "in_stock": true,
+      "warehouse_code": "GLW-04",
+      "supplier": {
+        "company_name": "Ridgeway Supply Ltd"
+      },
+      "notes": "Deliver before noon",
+      "version": "3.4.1"
+    },
+    {
+      "order_ref": "ORD-2026-000155",
+      "created_at": "2026-03-06T11:00:00Z",
+      "product_name": "Wago Clip 221",
+      "sku": "9056789567890",
+      "unit_price": 12.75,
+      "quantity": 27,
+      "in_stock": false,
+      "warehouse_code": "MAN-02",
+      "supplier": {
+        "company_name": "Baytree Components Ltd"
+      },
+      "notes": "Signature required",
+      "version": "3.5.1"
+    },
+    {
+      "order_ref": "ORD-2026-000166",
+      "created_at": "2026-03-07T11:00:00Z",
+      "product_name": "Trunking 50x50",
+      "sku": "1067890678901",
+      "unit_price": 13.5,
+      "quantity": 30,
+      "in_stock": true,
+      "warehouse_code": "LDN-03",
+      "supplier": {
+        "company_name": "Harrow Cable Co"
+      },
+      "notes": "Pallet return needed",
+      "version": "3.6.1"
+    },
+    {
+      "order_ref": "ORD-2026-000177",
+      "created_at": "2026-03-08T11:00:00Z",
+      "product_name": "Conduit Bend 25",
+      "sku": "2078901789012",
+      "unit_price": 14.25,
+      "quantity": 33,
+      "in_stock": false,
+      "warehouse_code": "BRS-01",
+      "supplier": {
+        "company_name": "Ridgeway Supply Ltd"
+      },
+      "notes": "Site access via gate B",
+      "version": "3.7.1"
+    }
+  ]
+}

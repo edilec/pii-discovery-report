@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1",
+  "dataset": "partial-export-sample",
+  "source": "tabular-export",
+  "records": [
+    {
+      "order_ref": "ORD-2026-000001",
+      "notes": "Leave at reception",
+      "quantity": 4
+    },
+    {
+      "order_ref": "ORD-2026-000002",
+      "notes": "Site access notes. Site access notes. Site access notes. Site access notes. Site access notes. Site access notes. Site access notes. Site access notes. Site access notes. Site access notes. Site access notes. Site access notes. ",
+      "quantity": 9
+    },
+    null,
+    {
+      "order_ref": "ORD-2026-000003",
+      "notes": "Call before delivery",
+      "quantity": 2
+    }
+  ]
+}
